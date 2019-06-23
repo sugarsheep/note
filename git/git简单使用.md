@@ -9,6 +9,7 @@
    ```shell
    git config --global user.name tom
    git config --global user.email tom@qq.com
+   信息保存位置：~/.gitconfig 文件
    ```
 
    - 项目级别
@@ -16,6 +17,7 @@
    ```shell
    git config user.name tom
    git config user.email tom@qq.com
+   信息保存位置：./.git/config 文件
    ```
 
 3. 设置远程库别名
@@ -23,6 +25,7 @@
    ```shell
    git remote -v 查看当前所有远程地址别名
    git remote add [别名] [远程地址]
+   信息保存位置：./.git/config 文件
    ```
 
 4. 下载远程库
