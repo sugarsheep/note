@@ -711,6 +711,42 @@
 
 ![1560475130177](images/1560475130177.png)
 
+## 受控组件和非受控组件
+
+- 受控组件，即表单标签的值是和组件的state的属性进行绑定，再添加一个onChange方法，就可以实现数据的双向传递
+
+  ```jsx
+  <input
+      type="text"
+      value={this.state.value}
+      onChange={(e) => {
+          this.setState({
+              value: e.target.value.toUpperCase(),
+          });
+      }}
+  />
+  ```
+
+- 非受控组件，即表单标签的值是保存到组件的ref中，使用时通过ref获取
+
+  ```jsx
+  class UnControlled extends Component {
+      handleSubmit = (e) => {
+          console.log(e);
+          e.preventDefault();
+          console.log(this.name.value);  //通过ref的属性获取元素的值
+      }
+      render() {
+          return (
+              <form onSubmit={this.handleSubmit}>
+                  <input type="text" ref={i => this.name = i} defaultValue="BeiJing" />
+                  <button type="submit">Submit</button>
+              </form>
+          );
+      }
+  }
+  ```
+
 # React应用
 
 ## 使用create-react-app创建react应用
@@ -761,3 +797,432 @@ ReactNews
 > 2. 运行时依赖
 > 3. 开发时依赖
 > 4. 脚本
+
+## 发送ajax请求
+
+- 使用axios
+
+  > 1. 安装模块
+  >
+  >    ```shell
+  >    cnpm install --save axios
+  >    ```
+  >
+  > 2. 导入模块
+  >
+  >    ```jsx
+  >    import axios from 'axios';
+  >    ```
+  >
+  > 3. 发送请求
+  >
+  >    ```jsx
+  >    const url = 'http://localhost:8080/hello';
+  >    axios.get(url)
+  >        .then(response => {
+  >        console.log(response);
+  >        const message  = response.data;
+  >        this.setState({ message });
+  >        console.log(message);
+  >    })
+  >        .catch(e => {
+  >        alert('请求异常' + e);
+  >    })
+  >    ```
+  >
+  > 4. 
+
+- 使用fetch
+
+## 组件之间相互通信
+
+### 通过props传递
+
+> - 共同的数据放在父组件上, 特有的数据放在自己组件内部(state)
+> - 一般数据-->父组件传递数据给子组件-->子组件读取数据
+> - 函数数据-->子组件传递数据给父组件-->子组件调用函数
+> - 问题: 多层传递属性麻烦, 兄弟组件通信不方便
+
+### 使用发布订阅方式
+
+> 即使用使用消息订阅(subscribe)-发布(publish)机制: 自定义事件机制
+>
+> ```
+> 工具库: PubSubJS
+> 下载: npm install pubsub-js --save
+> 使用: 
+>   import PubSub from 'pubsub-js' //引入
+>   PubSub.subscribe('delete', function(msg, data){ }); //订阅，msg是订阅的消息名称（无用处，即和delete相同），data是订阅后收到的数据
+>   PubSub.publish('delete', data) //发布消息
+> 优点: 可以支持任意关系组件之间的通信，可以实现兄弟组件通信，跨父子组件进行通信
+> ```
+>
+> 
+
+## react-router4
+
+### 相关理解
+
+#### react-router的理解
+
+- react的一个插件库
+- 专门用来实现一个SPA应用
+- 基于react的项目基本都会用到此库
+
+#### SPA的理解
+
+- 单页Web应用（single page web application，SPA）
+- 整个应用只有一个完整的页面
+- 点击页面中的链接不会刷新页面, 本身也不会向服务器发请求
+- 当点击链接时, 只会做页面的局部更新
+- 数据都需要通过ajax请求获取, 并在前端异步展现
+
+####  路由的理解
+
+1. 什么是路由?
+	一个路由就是一个映射关系(key:value)
+	key为路由路径, value可能是function/component
+2. 路由分类
+  后台路由: node服务器端路由, value是function, 用来处理客户端提交的请求并返回一个响应数据
+  前台路由: 浏览器端路由, value是component, 当请求的是路由path时, 浏览器端前没有发送http请求, 但界面会更新显示对应的组件 
+3. 后台路由
+  * 注册路由: router.get(path, function(req, res))
+  * 当node接收到一个请求时, 根据请求路径找到匹配的路由, 调用路由中的函数来处理请求, 返回响应数据
+4. 前端路由
+   - 注册路由: <Route path="/about" component={About}>
+   - 当浏览器的hash变为#about时, 当前路由组件就会变为About组件
+
+### 关于url中的#
+
+```
+1. 理解#
+	'#'代表网页中的一个位置。其右面的字符，就是该位置的标识符
+	改变#不触发网页重载
+	改变#会改变浏览器的访问历史
+2. 操作#
+	window.location.hash读取#值
+	window.onhashchange = func 监听hash改变
+3. 学习资源: 
+	阮一峰教程: http://www.ruanyifeng.com/blog/2011/03/url_hash.html
+```
+
+###  相关API
+
+#### 1). react-router中的相关组件: 
+
+```
+Router: 路由器组件, 用来包含各个路由组件
+Route: 路由组件, 注册路由 
+IndexRoute: 默认子路由组件
+hashHistory: 路由的切换由URL的hash变化决定，即URL的#部分发生变化
+Link: 路由链接组件
+```
+
+#### 2). Router: 路由器组件
+
+```
+属性:  history={hashHistory} 用来监听浏览器地址栏的变化, 并将URL解析成一个地址对象，供React Router匹配
+子组件: Route
+```
+
+#### 3). Route: 路由组件
+
+```
+属性1: path="/xxx"  
+属性2: component={Xxx}
+根路由组件: path="/"的组件, 一般为App
+子路由组件: 子<Route>配置的组件
+```
+
+#### 4). IndexRoute: 默认路由
+
+```
+当父路由被请求时, 默认就会请求此路由组件
+```
+
+#### 5). hashHistory
+
+```
+用于Router组件的history属性
+作用: 为地址url生成?_k=hash, 用于内部保存对应的state
+```
+
+#### 6). Link: 路由链接
+
+```
+属性1: to="/xxx"
+属性2: activeClassName="active"
+```
+
+### react-router的基本使用
+
+#### 1). 下载
+
+```
+npm install react-router --save
+npm install react-router-dom --save  //web版本
+```
+
+#### 2). 定义各个路由组件
+
+- About.jsx
+
+  ```jsx
+  import React, { Component } from 'react';
+  
+  class About extends Component {
+      render() {
+          return (
+              <div>
+                  <h3>about内容</h3>
+              </div>
+          );
+      }
+  }
+  
+  export default About;
+  ```
+
+- Home.jsx
+
+  ```jsx
+  import React, { Component } from 'react';
+  
+  class Home extends Component {
+      render() {
+          return (
+              <div>
+                  <h3>home内容</h3>
+              </div>
+          );
+      }
+  }
+  
+  export default Home;
+  ```
+
+- App.jsx
+
+  ```jsx
+  import React, { Component } from 'react';
+  import { NavLink, Switch, Route ,Redirect} from 'react-router-dom';
+  
+  import About from '../views/About';
+  import Home from '../views/Home';
+  
+  class App extends Component {
+      render() {
+          return (
+              <div>
+                  <div className='row'>
+                      <div className='col-xs-offset-2 col-xs-8'>
+                          <div className='page-header'><h2>React Router Demo</h2></div>
+                      </div>
+                  </div>
+  
+                  <div className='row'>
+                      <div className='col-xs-offset-2 col-xs-2'>
+                          <div className='list-group'>
+                              <NavLink className='list-group-item activeClass' aria-current='true' to='/about'>About</NavLink>
+                              <NavLink className='list-group-item' aria-current='false' to="/home">Home</NavLink>
+                          </div>
+                      </div>
+                      <div className='col-xs-6'>
+                          <div className='panel'>
+                              <Switch>
+                                  <Route path='/about' component={About} />
+                                  <Route path='/home' component={Home} />
+                                  {/* 定义默认路由 */}
+                                  <Redirect to='/about'/>
+                              </Switch>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          );
+      }
+  }
+  
+  export default App;
+  ```
+
+- index.js
+
+  ```jsx
+  import React from 'react';
+  import ReactDOM from 'react-dom';
+  import App from './components/App';
+  import { BrowserRouter, HashRouter } from 'react-router-dom'
+  
+  ReactDOM.render(
+      (
+          <BrowserRouter>
+              <App />
+          </BrowserRouter>
+      ),
+      document.getElementById('root')
+  );
+  
+  
+  ```
+
+- 自定义组件覆盖默认组件
+
+  ```jsx
+  import React, { Component } from 'react';
+  import {NavLink} from 'react-router-dom';
+  
+  class MyNavLink extends Component {
+      render() {
+          // 将MyNavLink的属性全部传递给NavLink,activeClassName激活状态设置默认样式
+          return <NavLink {...this.props} activeClassName='activenew'/>;
+      }
+  }
+  
+  export default MyNavLink;
+  ```
+
+- 
+
+#### 3). index.js: 注册路由, 渲染路由器标签
+
+```
+import React from 'react'
+import {render} from 'react-dom'
+import {Router, Route, IndexRoute, hashHistory} from 'react-router'
+import App from './modules/App'
+import About from './modules/About'
+import Repos from './modules/Repos'
+import Home from './modules/Home'
+
+render((
+  <Router history={hashHistory}>
+    <Route path="/" component={App}>
+      <IndexRoute component={Home}/>
+      <Route path="/about" component={About}></Route>
+      <Route path="/repos" component={Repos}></Route>
+    </Route>
+  </Router>
+), document.getElementById('app'))
+```
+
+#### 4). 主页面: index.html
+
+```
+<style>
+  .active {
+    color: red;
+  }
+</style>
+```
+
+### 向路由组件传递请求参数
+
+#### 1). repo.js: repos组件下的分路由组件
+
+```
+import React from 'react'
+export default function ({params}) {
+  let {username, repoName} = params
+  return (
+    <div>用户名:{username}, 仓库名:{repoName}</div>
+  )
+}
+```
+
+#### 2). repos.js
+
+```
+import React from 'react'
+import NavLink from './NavLink'
+
+export default class Repos extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      repos: [
+        {username: 'faceback', repoName: 'react'},
+        {username: 'faceback', repoName: 'react-router'},
+        {username: 'Angular', repoName: 'angular'},
+        {username: 'Angular', repoName: 'angular-cli'}
+      ]
+    };
+    this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  handleSubmit () {
+
+    const repos = this.state.repos
+    repos.push({
+      username: this.refs.username.value,
+      repoName: this.refs.repoName.value
+    })
+    this.setState({repos})
+    this.refs.username.value = ''
+    this.refs.repoName.value = ''
+  }
+
+  render() {
+    return (
+      <div>
+        <h2>Repos</h2>
+        <ul>
+          {
+            this.state.repos.map((repo, index) => {
+              const to = `/repos/${repo.username}/${repo.repoName}`
+              return (
+                <li key={index}>
+                  <Link to={to} activeClassName='active'>{repo.repoName}</Link>
+                </li>
+              )
+            })
+          }
+          <li>
+            <form onSubmit={this.handleSubmit}>
+              <input type="text" placeholder="用户名" ref='username'/> / {' '}
+              <input type="text" placeholder="仓库名" ref='repoName'/>{' '}
+              <button type="submit">添加</button>
+            </form>
+          </li>
+        </ul>
+        {this.props.children}
+      </div>
+    );
+  }
+}
+```
+
+#### 3). index.js: 配置路由
+
+```
+<Route path="/repos" component={Repos}>
+  <Route path="/repos/:username/:repoName" component={Repo}/>
+</Route>
+```
+
+### 优化Link组件
+
+#### 1). NavLink.js
+
+```
+import React from 'react'
+import {Link} from 'react-router'
+export default function NavLink(props) {
+  return <Link {...props} activeClassName="active"/>
+}
+```
+
+#### 2). Repos.js
+
+# vscode插件
+
+- vscode-icons：文件图标插件，为不同的文件添加不同的图标
+- Bracket Pair Colorize：括号颜色匹配
+- Color Highlight：颜色高亮显示
+- Path Intellisense：Path Intellisense 是一个 Visual Studio Code 插件，可自动补全文件名。它对于在 React 中导入组件非常有用，因为你不必手动输入要查找的文件的路径
+- reactjs code snippets：react 开发的一些简写，提高开发效率 
+- ESLint
+- Debugger for Chrome
+- IntelliSense for CSS class names in HTML
+- Bookmarks：将常用的位置添加到书签，可以极大提高效率
