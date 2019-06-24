@@ -883,8 +883,8 @@ ReactNews
 	一个路由就是一个映射关系(key:value)
 	key为路由路径, value可能是function/component
 2. 路由分类
-  后台路由: node服务器端路由, value是function, 用来处理客户端提交的请求并返回一个响应数据
-  前台路由: 浏览器端路由, value是component, 当请求的是路由path时, 浏览器端前没有发送http请求, 但界面会更新显示对应的组件 
+    后台路由: node服务器端路由, value是function, 用来处理客户端提交的请求并返回一个响应数据
+    前台路由: 浏览器端路由, value是component, 当请求的是路由path时, 浏览器端前没有发送http请求, 但界面会更新显示对应的组件 
 3. 后台路由
   * 注册路由: router.get(path, function(req, res))
   * 当node接收到一个请求时, 根据请求路径找到匹配的路由, 调用路由中的函数来处理请求, 返回响应数据
@@ -1074,7 +1074,7 @@ npm install react-router-dom --save  //web版本
   
   class MyNavLink extends Component {
       render() {
-          // 将MyNavLink的属性全部传递给NavLink,activeClassName激活状态设置默认样式
+          // 将MyNavLink的属性全部传递给NavLink,activeClassName激活状态设置默认样式，默认的class为active
           return <NavLink {...this.props} activeClassName='activenew'/>;
       }
   }
@@ -1214,6 +1214,132 @@ export default function NavLink(props) {
 ```
 
 #### 2). Repos.js
+
+## 嵌套路由
+
+> 即路由中又包含一个路由
+
+### 如何编写嵌套路由
+
+- 编写一个路由组件
+
+- 在父路由组件中指定
+
+  - 路由连接：<NavLink>或<Link>
+  - 路由:<Route>
+
+- 父组件定义嵌套路由
+
+  ```jsx
+  import React, { Component } from 'react';
+  import { Switch, Route, Redirect } from 'react-router-dom';
+  
+  import MyNavLink from './MyNavLink';
+  import News from './News';
+  import Message from './Message';
+  
+  class Home extends Component {
+      render() {
+          return (
+              <div>
+                  <h3>home内容</h3>
+                  <div>
+                      <ul className='nav nav-tabs'>
+                          <li>
+                              <MyNavLink to='/home/mews'>news</MyNavLink>
+                          </li>
+                          <li>
+                              <MyNavLink to='/home/message'>message</MyNavLink>
+                          </li>
+                      </ul>
+                      <div>
+                          <Switch>
+                              <Route path='/home/mews' component={News}></Route>
+                              <Route path='/home/message' component={Message}></Route>
+                              <Redirect to='/home/mews'/>
+                          </Switch>
+                      </div>
+                  </div>
+              </div>
+          );
+      }
+  }
+  
+  export default Home;
+  ```
+
+- 组件1
+
+  ```jsx
+  import React, { Component } from 'react';
+  
+  class News extends Component {
+      state = {
+          newsArr: [
+              'news01',
+              'news02',
+              'news03'
+          ]
+      }
+  
+      render() {
+          return (
+              <ul>
+                  {
+                      this.state.newsArr.map((news, index) => <li key={index}>{news}</li>)
+                  }
+              </ul>
+          );
+      }
+  }
+  
+  export default News;
+  ```
+
+- 组件2
+
+  ```jsx
+  import React, { Component } from 'react';
+  
+  class Message extends Component {
+  
+      state = {
+          messages: []
+      }
+  
+      componentDidMount = () => {
+          // 模拟发送ajax请求
+          setTimeout(() => {
+              const messages = [
+                  { id: 1, title: 'message001' },
+                  { id: 2, title: 'message002' },
+                  { id: 3, title: 'message003' },
+              ];
+              this.setState({ messages });
+          }, 1000)
+      }
+  
+      render() {
+          return (
+              <ul>
+                  {
+                      this.state.messages.map((m, index) =>
+                          (
+                              <li key={index}>
+                                  <a href='??'>{m.title}</a>
+                              </li>
+                          )
+                      )
+                  }
+              </ul>
+          );
+      }
+  }
+  
+  export default Message;
+  ```
+
+- 
 
 # vscode插件
 
