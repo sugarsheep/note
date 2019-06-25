@@ -1118,94 +1118,121 @@ render((
 
 ### 向路由组件传递请求参数
 
-#### 1). repo.js: repos组件下的分路由组件
+- 父组件可以通过url向子组件传递参数，其中的`:id`既是占位符，也是参数的名称
 
-```
-import React from 'react'
-export default function ({params}) {
-  let {username, repoName} = params
-  return (
-    <div>用户名:{username}, 仓库名:{repoName}</div>
-  )
+  ```jsx
+  <Route path='/home/message/messageDetail/:id' component={MessageDetail} />
+  ```
+
+  子组件通过如下方式获取参数,获取出来的参数是一个字符串：
+
+  ```jsx
+  const { id } = this.props.match.params;
+  ```
+
+  字符串转数字的简便方法,将字符串乘以1，即可转换成number类型
+
+  ```jsx
+  id*1
+  ```
+
+- 数组查找元素，使用find方法，找到第一个匹配的元素
+
+  ```jsx
+  const message = allMessages.find(m => m.id === id*1);
+  ```
+
+- 
+
+#### 1). 父路由组件：Message.jsx
+
+```jsx
+import React, { Component } from 'react';
+import { Route } from 'react-router-dom';
+
+import MessageDetail from './MessageDetail';
+
+class Message extends Component {
+
+    state = {
+        messages: []
+    }
+
+    componentDidMount = () => {
+        // 模拟发送ajax请求
+        setTimeout(() => {
+            const messages = [
+                { id: 1, title: 'message001' },
+                { id: 2, title: 'message002' },
+                { id: 3, title: 'message003' },
+            ];
+            this.setState({ messages });
+        }, 1000)
+    }
+
+    render() {
+        return (
+            <div>
+                <ul>
+                    {
+                        this.state.messages.map((m, index) =>
+                            (
+                                <li key={index}>
+                                    <a href={`/home/message/messageDetail/${m.id}`}>{m.title}</a>
+                                </li>
+                            )
+                        )
+                    }
+                </ul>
+                <Route path='/home/message/messageDetail/:id' component={MessageDetail} />
+            </div>
+        );
+    }
 }
+
+export default Message;
 ```
 
-#### 2). repos.js
+#### 2). 子路由组件：MessageDetail.jsx
 
-```
-import React from 'react'
-import NavLink from './NavLink'
+```jsx
+import React, { Component } from 'react';
 
-export default class Repos extends React.Component {
+const allMessages = [
+    { id: 1, title: 'message001', content: '张三' },
+    { id: 2, title: 'message002', content: '李四' },
+    { id: 3, title: 'message003', content: '王五' },
+];
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      repos: [
-        {username: 'faceback', repoName: 'react'},
-        {username: 'faceback', repoName: 'react-router'},
-        {username: 'Angular', repoName: 'angular'},
-        {username: 'Angular', repoName: 'angular-cli'}
-      ]
-    };
-    this.handleSubmit = this.handleSubmit.bind(this)
-  }
+class MessageDetail extends Component {
 
-  handleSubmit () {
-
-    const repos = this.state.repos
-    repos.push({
-      username: this.refs.username.value,
-      repoName: this.refs.repoName.value
-    })
-    this.setState({repos})
-    this.refs.username.value = ''
-    this.refs.repoName.value = ''
-  }
-
-  render() {
-    return (
-      <div>
-        <h2>Repos</h2>
-        <ul>
-          {
-            this.state.repos.map((repo, index) => {
-              const to = `/repos/${repo.username}/${repo.repoName}`
-              return (
-                <li key={index}>
-                  <Link to={to} activeClassName='active'>{repo.repoName}</Link>
-                </li>
-              )
-            })
-          }
-          <li>
-            <form onSubmit={this.handleSubmit}>
-              <input type="text" placeholder="用户名" ref='username'/> / {' '}
-              <input type="text" placeholder="仓库名" ref='repoName'/>{' '}
-              <button type="submit">添加</button>
-            </form>
-          </li>
-        </ul>
-        {this.props.children}
-      </div>
-    );
-  }
+    render() {
+        const { id } = this.props.match.params;
+        const temp = id*1;
+        console.log(typeof(temp));
+        const message = allMessages.find(m => m.id === id*1);
+        return (
+            <div>
+                <ul>
+                    <li>id: {message.id}</li>
+                    <li>title: {message.title}</li>
+                    <li>Content: {message.content}</li>
+                </ul>
+            </div>
+        );
+    }
 }
-```
 
-#### 3). index.js: 配置路由
-
-```
-<Route path="/repos" component={Repos}>
-  <Route path="/repos/:username/:repoName" component={Repo}/>
-</Route>
+export default MessageDetail;
 ```
 
 ### 优化Link组件
 
+> 设置默认的激活样式，并使用参数列表的方式传递所有参数
+
 #### 1). NavLink.js
 
-```
+```jsx
 import React from 'react'
 import {Link} from 'react-router'
 export default function NavLink(props) {
@@ -1213,13 +1240,11 @@ export default function NavLink(props) {
 }
 ```
 
-#### 2). Repos.js
-
-## 嵌套路由
+### 嵌套路由
 
 > 即路由中又包含一个路由
 
-### 如何编写嵌套路由
+#### 如何编写嵌套路由
 
 - 编写一个路由组件
 
@@ -1337,6 +1362,27 @@ export default function NavLink(props) {
   }
   
   export default Message;
+  ```
+
+
+### 路由链接与非路由链接
+
+- 路由链接：不会向后台发送请求
+- 非路由链接：会发送请求，即F12中的network中会有请求
+
+### 多种路由跳转方式
+
+- 通过history对象的方法进行跳转
+
+  - push：插入一个历史记录
+  - replace：替换最新的历史记录
+  - goBack：回退一个历史记录
+  - goForward：前进一个历史记录
+
+- 直接通过js进行跳转
+
+  ```
+  window.location.href="http://www.baidu.com";
   ```
 
 - 
