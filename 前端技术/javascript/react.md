@@ -1385,7 +1385,74 @@ export default function NavLink(props) {
   window.location.href="http://www.baidu.com";
   ```
 
-- 
+
+## react-ui
+
+### MATERIAL-UI(国外)
+
+- <https://material-ui.com/>
+
+### Ant Design（蚂蚁金服）
+
+- <https://ant.design/index-cn>
+
+- 实现按需下载
+
+  - 下载依赖包
+
+    ```
+    npm install react-app-rewired customize-cra --save-dev
+    npm install babel-plugin-import --save-dev
+    ```
+
+  - 修改package.json
+
+    ```json
+    "scripts": {
+       "start": "react-app-rewired start",
+       "build": "react-app-rewired build",
+       "test": "react-app-rewired test --env=jsdom"
+    }
+    ```
+
+  - 然后在项目根目录创建一个 config-overrides.js 用于修改默认配置
+
+    ```js
+    const { override, fixBabelImports } = require('customize-cra');
+    module.exports = override(
+        fixBabelImports('import', {
+            libraryName: 'antd-mobile',
+            style: 'css',
+        }),
+    );
+    ```
+
+  - 
+
+- demo
+
+  ```jsx
+  import React, { Component } from 'react';
+  
+  import { Button ,Toast} from 'antd-mobile';
+  
+  class App extends Component {
+  
+      handleClick =()=>{
+          Toast.info("提交成功")
+      }
+  
+      render() {
+          return (
+              <Button type='primary' onClick={this.handleClick}>提交</Button>
+          );
+      }
+  }
+  
+  export default App;
+  ```
+
+## redux
 
 # vscode插件
 
