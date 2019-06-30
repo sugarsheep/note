@@ -1454,6 +1454,278 @@ export default function NavLink(props) {
 
 ## redux
 
+### redux是什么
+
+- redux是专门做状态管理的独立第3方库, 不是react插件
+- 对应用中状态进行集中式的管理(写/读)
+- 与react-redux, redux-thunk等插件配合使用
+- 作用：集中式管理react应用中多个组件的共享状态
+
+### react与redux交互图
+
+![1561794395225](E:\git\note\前端技术\javascript\images\1561794395225.png)
+
+- react通过store获取state
+
+### 何时需要使用redux
+
+- 总体原则：能不用就不用，如果不用比较吃力才使用
+- 某个组件的状态需要共享
+- 某个状态需要在任何地方都可以拿到
+- 一个组件需要改变全局状态
+- 一个组件需要修改另一个组件的状态
+
+### redux核心api
+
+1. createStore()
+
+   > 作用：创建包含指定reducer的store对象
+
+2. store对象
+
+   - 作用：redux最核心的管理对象
+   - 它内部维护着：state,reducer
+   - 核心方法
+     - getState()
+     - dispatch(action),
+     - subscribe(linstener)
+   - 编码：
+     - store.getState()
+     - store.dispatch({type:'INCREMENT',number})
+     - store.subscribe(render)
+   - 
+
+3. 
+
+### redux的使用
+
+- 安装
+
+  ```
+  cnpm install --save redux
+  ```
+
+- demo
+
+  ![1561887554503](E:\git\note\前端技术\javascript\images\1561887554503.png)
+
+- redux文件一般分为4个部分
+
+  - action-types.js:定义代码中需要使用的常量
+  - actions.js:定义所有的action
+  - reducers:定义所有的reducer，即所有action的处理
+  - store.js：获取store对象
+
+- 导入一个文件中的所有模块
+
+  ```jsx
+  import * as actions from '../redux/actions' //获取时通过actions获取即可
+  ```
+
+- 代码
+
+  - index.js
+
+    ```jsx
+    import React from 'react';
+    import ReactDOM from 'react-dom';
+    
+    
+    import App from './components/App';
+    import store from './redux/store';
+    
+    function render(){
+        return ReactDOM.render(<App store={store}/>,document.getElementById('root'));
+    }
+    
+    // 初始化渲染
+    render();
+    //订阅监听
+    store.subscribe(render)
+    ```
+
+  - App.jsx
+
+    ```jsx
+    import React, { Component } from 'react';
+    
+    import * as actions from '../redux/actions'
+    
+    
+    class App extends Component {
+    
+    
+        increment = () => {
+            const number = this.select.value * 1;
+            this.props.store.dispatch(actions.increment(number))
+        }
+    
+        decrement = () => {
+            const number = this.select.value * 1;
+            this.props.store.dispatch(actions.decrement(number))
+        }
+    
+        incrementIfOdd = () => {
+            const number = this.select.value * 1;
+            const count = this.props.store.getState();
+            if (count % 2 === 1) {
+                this.props.store.dispatch(actions.increment(number))
+            }
+        }
+    
+        incrementAsync = () => {
+            const number = this.select.value * 1;
+    
+            setTimeout(() => {
+                this.props.store.dispatch(actions.increment(number))
+    
+            }, 1000);
+        }
+        render() {
+            const count = this.props.store.getState();
+            return (
+                <div>
+                    <p>click {count} times</p>
+                    <div>
+                        <select ref={select => this.select = select}>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>&nbsp;&nbsp;
+                        <button onClick={this.increment}>+</button>&nbsp;&nbsp;
+                        <button onClick={this.decrement}>-</button>&nbsp;&nbsp;
+                        <button onClick={this.incrementIfOdd}>increment if odd</button>&nbsp;&nbsp;
+                        <button onClick={this.incrementAsync}>async</button>
+                    </div>
+                </div>
+            );
+        }
+    }
+    
+    export default App;
+    ```
+
+  - action-types.js
+
+    ```js
+    export const INCREMENT = 'INCREMENT';
+    export const DECREMENT = 'DECREMENT';
+    ```
+
+  - actions.js
+
+    ```js
+    import { INCREMENT, DECREMENT } from '../redux/action-types';
+    
+    export const increment = (number)=>({type:INCREMENT,data:number})
+    
+    export const decrement = (number)=>({type:DECREMENT,data:number})
+    ```
+
+  - reducers.js
+
+    ```js
+    import { INCREMENT, DECREMENT } from './action-types'
+    
+    export function counter(state = 0, action) {
+        switch (action.type) {
+            case INCREMENT:
+                return state + action.data;
+            case DECREMENT:
+                return state - action.data;
+            default:
+                return state;
+        }
+    }
+    ```
+
+  - store.js
+
+    ```js
+    import {createStore} from 'redux';
+    import {counter} from './reducers.js'
+    
+    //创建store
+    const store = createStore(counter);
+    export default store;
+    ```
+
+- 
+
+### redux的三个核心概念
+
+#### action
+
+- 标识要执行行为的对象
+
+- 包含2个方面的属性
+
+  - type:标识属性，值为字符串，唯一，必要属性
+  - xxx:数据属性，值任意类型，可选属性
+
+- 例子
+
+  ```jsx
+  const action{
+  	type:'INCREMENT',
+  	data:2
+  }
+  ```
+
+- Action Creator(创建Action的工厂函数)
+
+  ```jsx
+  const increment=(number)=>({type:'INCREMENT',data:number}); //加括号是为了返回对象，如果不加，{}就会被认为是函数体的标识
+  ```
+
+- 
+
+#### reducer
+
+- 根据老的state和action，产生新的state和纯函数
+
+- 例子
+
+  ```jsx
+  export default function counter(state=0,action){
+  	switch(action.type){
+  		case 'INCREMENT':
+  			return state+action.data;
+  		case 'DECREMENT':
+  			return state-action.data;
+  		default:
+  			return state;
+  	}
+  }
+  ```
+
+- 注意
+
+  - 返回一个新的状态
+  - 不要修改原来的状态
+
+#### store
+
+- 将state、action和reducer联系在一起的对象
+
+- 如何得到此对象
+
+  ```jsx
+  import {createStore} from 'redux'
+  import reducer from './reducers'
+  const store = createStore(reducer)  //内部会第一次调用reducer函数获得初始state
+  ```
+
+- 此对象的功能
+
+  - getState():得到state
+  - dispatch(action):分发action，出发reducer调用，产生新的state
+  - subscribe(linstener)：注册监听，当产生新的state时自动调用
+
+### 降低react和redux的耦合度
+
+- 使用react-redux：react-redux是react的一个组件
+
 # vscode插件
 
 - vscode-icons：文件图标插件，为不同的文件添加不同的图标
