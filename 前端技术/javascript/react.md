@@ -1722,9 +1722,52 @@ export default function NavLink(props) {
   - dispatch(action):分发action，出发reducer调用，产生新的state
   - subscribe(linstener)：注册监听，当产生新的state时自动调用
 
-### 降低react和redux的耦合度
+### react-redux
 
-- 使用react-redux：react-redux是react的一个组件
+#### 理解
+
+- react-redux是react的一个插件库
+- 专门用来简化react应用中使用redux
+
+#### react-redux将所有组件分成两大类
+
+1. UI组件
+2. 11
+
+#### react-redux的使用
+
+- 安装
+
+  ```
+  cnpm install --save react-redux
+  ```
+
+- 引入组件
+
+  ```jsx
+  import {Provider} from 'react-redux';
+  ```
+
+- 改造index.js
+
+  ```jsx
+  import React from 'react';
+  import ReactDOM from 'react-dom';
+  import {Provider} from 'react-redux';
+  
+  
+  import App from './components/App';
+  import store from './redux/store';
+  
+  ReactDOM.render((
+       // 将store交给Provider管理
+      <Provider store={store}>
+          <App></App>
+      </Provider>
+  ),document.getElementById('root'));
+  ```
+
+- 
 
 # vscode插件
 
