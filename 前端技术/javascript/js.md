@@ -358,3 +358,31 @@
 >
 > JavaScript 严格模式(strict mode)不允许使用未声明的变量。
 
+## 基础知识
+
+### 使用立即执行函数封装模块
+
+> Javascript不是一种模块化编程语言，在es6以前，它是不支持”类”（class），所以也就没有”模块”（module）了，为了解决这个问题，则使用立即执行函数封装模块
+
+例如：
+
+```js
+        let myModule = (function(){
+            let count = 0;
+            let increment = ()=>{
+                count = count+1;
+                console.log(count);
+            } 
+            let decrement = ()=>{
+                count = count-1;
+                console.log(count);
+            }
+            return{
+                increment,
+                decrement
+            }
+        })();
+        myModule.increment();
+        myModule.decrement();
+```
+

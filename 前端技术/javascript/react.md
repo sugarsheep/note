@@ -1467,7 +1467,7 @@ export default function NavLink(props) {
 
 #### react与redux交互图
 
-![1561794395225](E:\git\note\前端技术\javascript\images\1561794395225.png)
+![1561794395225](images\1561794395225.png)
 
 - react通过store获取state
 
@@ -1511,7 +1511,7 @@ export default function NavLink(props) {
 
 - demo
 
-  ![1561887554503](E:\git\note\前端技术\javascript\images\1561887554503.png)
+  ![1561887554503](images\1561887554503.png)
 
 - redux文件一般分为4个部分
 
