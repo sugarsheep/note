@@ -44,3 +44,59 @@ Object.assign({}, state, {
         visibilityFilter: action.filter
       })
 ```
+
+### this的指向
+
+> ```js
+> function test(){
+>     console.log(this);
+> }
+> 
+> let obj = {
+>     name:'zhangsan',
+>     hello:test
+> }
+> 
+> test(); // this为window
+> obj.hello(); //this为obj
+> ```
+>
+> - 以函数的方式进行调用，则this指向为window
+> - 以对象的属性方法进行调用，则指向的是该对象
+
+### 创建对象
+
+#### 使用工厂方法创建对象
+
+```js
+function createPerson(name, age) {
+    let person = new Object();
+    person.name = name;
+    person.age = age;
+    person.sayName = function(){
+        console.log(this.name);
+    }
+    return person;
+}
+let obj = createPerson("zhangsan", 16);
+let obj2 = createPerson("lisi", 18);
+obj.sayName();
+obj2.sayName();
+```
+
+#### 使用构造函数创建对象
+
+> - 构造函数首字母大写
+> - 创建对象时使用new关键字
+
+```js
+function Person(name, age) {
+    this.name = name;
+    this.age = age;
+    this.sayName = function(){
+        console.log(this.name);
+    }
+}
+let person = new Person("zhangsan", 16)
+```
+
