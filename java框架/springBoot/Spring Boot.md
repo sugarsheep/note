@@ -1,6 +1,10 @@
-# **一、**Spring Boot 入门
+## 说明
 
-## 1、Spring Boot 简介
+## 目录
+
+## Spring Boot 入门
+
+### Spring Boot 简介
 
 > 简化Spring应用开发的一个框架；
 >
@@ -8,7 +12,7 @@
 >
 > J2EE开发的一站式解决方案；
 
-## 2、微服务
+### 微服务
 
 2014，martin fowler
 
@@ -22,9 +26,7 @@
 
 [详细参照微服务文档](https://martinfowler.com/articles/microservices.html#MicroservicesAndSoa)
 
-
-
-## 3、环境准备
+### 环境准备
 
 http://www.gulixueyuan.com/ 谷粒学院
 
@@ -40,9 +42,7 @@ http://www.gulixueyuan.com/ 谷粒学院
 
 统一环境；
 
-
-
-### 1、MAVEN设置；
+### MAVEN设置
 
 给maven 的settings.xml配置文件的profiles标签添加
 
@@ -61,7 +61,7 @@ http://www.gulixueyuan.com/ 谷粒学院
 </profile>
 ```
 
-### 2、IDEA设置
+### IDEA设置
 
 整合maven进来；
 
@@ -71,17 +71,15 @@ http://www.gulixueyuan.com/ 谷粒学院
 
 ![images/](images/搜狗截图20180129151112.png)
 
-## 4、Spring Boot HelloWorld
+### Spring Boot HelloWorld
 
 一个功能：
 
 浏览器发送hello请求，服务器接受请求并处理，响应Hello World字符串；
 
+#### 创建一个maven工程；（jar）
 
-
-### 1、创建一个maven工程；（jar）
-
-### 2、导入spring boot相关的依赖
+#### 导入spring boot相关的依赖
 
 ```xml
     <parent>
@@ -97,7 +95,7 @@ http://www.gulixueyuan.com/ 谷粒学院
     </dependencies>
 ```
 
-### 3、编写一个主程序；启动Spring Boot应用
+#### 编写一个主程序；启动Spring Boot应用
 
 ```java
 
@@ -115,7 +113,7 @@ public class HelloWorldMainApplication {
 }
 ```
 
-### 4、编写相关的Controller、Service
+#### 编写相关的Controller、Service
 
 ```java
 @Controller
@@ -132,9 +130,9 @@ public class HelloController {
 
 
 
-### 5、运行主程序测试
+#### 运行主程序测试
 
-### 6、简化部署
+#### 简化部署
 
 ```xml
  <!-- 这个插件，可以将应用打包成一个可执行的jar包；-->
@@ -150,11 +148,11 @@ public class HelloController {
 
 将这个应用打成jar包，直接使用java -jar的命令进行执行；
 
-## 5、Hello World探究
+### Hello World探究
 
-### 1、POM文件
+#### POM文件
 
-#### 1、父项目
+##### 父项目
 
 ```xml
 <parent>
@@ -171,14 +169,13 @@ public class HelloController {
   <relativePath>../../spring-boot-dependencies</relativePath>
 </parent>
 他来真正管理Spring Boot应用里面的所有依赖版本；
-
 ```
 
 Spring Boot的版本仲裁中心；
 
 以后我们导入依赖默认是不需要写版本；（没有在dependencies里面管理的依赖自然需要声明版本号）
 
-#### 2、启动器
+##### 启动器
 
 ```xml
 <dependency>
@@ -197,7 +194,7 @@ Spring Boot将所有的功能场景都抽取出来，做成一个个的starters�
 
 
 
-### 2、主程序类，主入口类
+#### 主程序类，主入口类
 
 ```java
 /**
@@ -254,15 +251,14 @@ public @interface EnableAutoConfiguration {
 
 ​      	@**AutoConfigurationPackage**：自动配置包
 
-​		@**Import**(AutoConfigurationPackages.Registrar.class)：
-
-​		Spring的底层注解@Import，给容器中导入一个组件；导入的组件由AutoConfigurationPackages.Registrar.class；
-
-==将主配置类（@SpringBootApplication标注的类）的所在包及下面所有子包里面的所有组件扫描到Spring容器；==
+> - @**Import**(AutoConfigurationPackages.Registrar.class)：
+>
+> - Spring的底层注解@Import，给容器中导入一个组件；导入的组件由AutoConfigurationPackages.Registrar.class；
+> - 将主配置类（@SpringBootApplication标注的类）的**所在包及下面所有子包**里面的所有组件扫描到Spring容器；
 
 ​	@**Import**(EnableAutoConfigurationImportSelector.class)；
 
-​		给容器中导入组件？
+​		给容器中导入组件
 
 ​		**EnableAutoConfigurationImportSelector**：导入哪些组件的选择器；
 
@@ -276,21 +272,17 @@ public @interface EnableAutoConfiguration {
 
 
 
-==Spring Boot在启动的时候从类路径下的META-INF/spring.factories中获取EnableAutoConfiguration指定的值，将这些值作为自动配置类导入到容器中，自动配置类就生效，帮我们进行自动配置工作；==以前我们需要自己配置的东西，自动配置类都帮我们；
+Spring Boot在启动的时候从类路径下的META-INF/spring.factories中获取EnableAutoConfiguration指定的值，将这些值作为自动配置类导入到容器中，自动配置类就生效，帮我们进行自动配置工作；以前我们需要自己配置的东西，自动配置类都帮我们；
 
-J2EE的整体整合解决方案和自动配置都在spring-boot-autoconfigure-1.5.9.RELEASE.jar；
-
-
-
-​		
+J2EE的整体整合解决方案和自动配置都在spring-boot-autoconfigure-1.5.9.RELEASE.jar
 
 ==Spring注解版（谷粒学院）==
 
 
 
-## 6、使用Spring Initializer快速创建Spring Boot项目
+### 使用Spring Initializer快速创建Spring Boot项目
 
-### 1、IDEA：使用 Spring Initializer快速创建项目
+#### IDEA：使用 Spring Initializer快速创建项目
 
 IDE都支持使用Spring的项目创建向导快速创建一个Spring Boot项目；
 
@@ -304,17 +296,9 @@ IDE都支持使用Spring的项目创建向导快速创建一个Spring Boot项目
   - templates：保存所有的模板页面；（Spring Boot默认jar包使用嵌入式的Tomcat，默认不支持JSP页面）；可以使用模板引擎（freemarker、thymeleaf）；
   - application.properties：Spring Boot应用的配置文件；可以修改一些默认设置；
 
-### 2、STS使用 Spring Starter Project快速创建项目
+## 配置文件
 
-
-
--------------
-
-
-
-# 二、配置文件
-
-## 1、配置文件
+### 配置文件
 
 SpringBoot使用一个全局的配置文件，配置文件名是固定的；
 
@@ -357,9 +341,9 @@ server:
 
 
 
-## 2、YAML语法：
+### YAML语法：
 
-### 1、基本语法
+#### 基本语法
 
 k:(空格)v：表示一对键值对（空格必须有）；
 
@@ -375,9 +359,9 @@ server:
 
 
 
-### 2、值的写法
+#### 值的写法
 
-#### 字面量：普通的值（数字，字符串，布尔）
+##### 字面量：普通的值（数字，字符串，布尔）
 
 ​	k: v：字面直接来写；
 
@@ -393,7 +377,7 @@ server:
 
 
 
-#### 对象、Map（属性和值）（键值对）：
+##### 对象、Map（属性和值）（键值对）：
 
 ​	k: v：在下一行来写对象的属性和值的关系；注意缩进
 
@@ -413,7 +397,7 @@ friends: {lastName: zhangsan,age: 18}
 
 
 
-#### 数组（List、Set）：
+##### 数组（List、Set）：
 
 用- 值表示数组中的一个元素
 
@@ -432,9 +416,11 @@ pets: [cat,dog,pig]
 
 
 
-## 3、配置文件值注入
+### 配置文件值注入
 
 配置文件
+
+**yml写法**
 
 ```yaml
 person:
@@ -449,6 +435,20 @@ person:
     dog:
       name: 小狗
       age: 12
+```
+
+**properties写法**
+
+```
+person.lastName=hello
+person.age=18
+person.boss=false
+person.birth=2017/12/12
+person.maps.k1=v1
+person.maps.k2=v2
+person.lists=lisi,zhaoliu
+person.dog.name=小狗
+person.dog.age=12
 ```
 
 javaBean：
@@ -490,13 +490,13 @@ public class Person {
 		</dependency>
 ```
 
-#### 1、properties配置文件在idea中默认utf-8可能会乱码
+#### properties配置文件在idea中默认utf-8可能会乱码
 
 调整
 
 ![idea配置乱码](images/搜狗截图20180130161620.png)
 
-#### 2、@Value获取值和@ConfigurationProperties获取值比较
+#### @Value获取值和@ConfigurationProperties获取值比较
 
 |            | @ConfigurationProperties | @Value |
 | ---------- | ------------------------ | ------ |
@@ -512,9 +512,7 @@ public class Person {
 
 如果说，我们专门编写了一个javaBean来和配置文件进行映射，我们就直接使用@ConfigurationProperties；
 
-
-
-#### 3、配置文件注入值数据校验
+#### 配置文件注入值数据校验
 
 ```java
 @Component
@@ -543,11 +541,12 @@ public class Person {
     private Dog dog;
 ```
 
+#### @PropertySource&@ImportResource&@Bean
 
+##### @**PropertySource**
 
-#### 4、@PropertySource&@ImportResource&@Bean
-
-@**PropertySource**：加载指定的配置文件；
+> - 加载指定的配置文件，只能用于properties文件
+> - @ConfigurationProperties(prefix = "person")默认从全局配置文件中获取值,若配合@PropertySource，则可读取指定位置的配置文件
 
 ```java
 /**
@@ -584,11 +583,10 @@ public class Person {
 
 
 
-@**ImportResource**：导入Spring的配置文件，让配置文件里面的内容生效；
+##### @**ImportResource**
 
-Spring Boot里面没有Spring的配置文件，我们自己编写的配置文件，也不能自动识别；
-
-想让Spring的配置文件生效，加载进来；@**ImportResource**标注在一个配置类上
+> - 导入Spring的配置文件，让配置文件里面的内容生效
+> - Spring Boot里面没有Spring的配置文件，我们自己编写的配置文件，也不能自动识别，想让Spring的配置文件生效，加载进来；@**ImportResource**标注在一个配置类上
 
 ```java
 @ImportResource(locations = {"classpath:beans.xml"})
@@ -635,9 +633,9 @@ public class MyAppConfig {
 }
 ```
 
-##4、配置文件占位符
+### 配置文件占位符
 
-### 1、随机数
+#### 随机数
 
 ```java
 ${random.value}、${random.int}、${random.long}
@@ -645,9 +643,7 @@ ${random.int(10)}、${random.int[1024,65536]}
 
 ```
 
-
-
-### 2、占位符获取之前配置的值，如果没有可以是用:指定默认值
+#### 占位符获取之前配置的值，如果没有可以是用:指定默认值
 
 ```properties
 person.last-name=张三${random.uuid}
@@ -661,19 +657,20 @@ person.dog.name=${person.hello:hello}_dog
 person.dog.age=15
 ```
 
+### Profile
 
-
-## 5、Profile
-
-### 1、多Profile文件
+#### 多Profile文件
 
 我们在主配置文件编写的时候，文件名可以是   application-{profile}.properties/yml
 
 默认使用application.properties的配置；
 
+如：application-prod.properties  application-dev.properties
 
+- springboot可以在多个profile之间进行切换，在主配置文件中使用**spring.profiles.active**属性进行声明
+- 使用profiles的方式需要创建多个配置文件，而使用yml的方式则可以在主配置文件中声明多个文档块
 
-### 2、yml支持多文档块方式
+#### yml支持多文档块方式
 
 ```yml
 
@@ -700,9 +697,7 @@ spring:
 
 
 
-
-
-### 3、激活指定profile
+#### 激活指定profile
 
 ​	1、在配置文件中指定  spring.profiles.active=dev
 
@@ -718,7 +713,7 @@ spring:
 
 
 
-## 6、配置文件加载位置
+### 配置文件加载位置
 
 springboot 启动会扫描以下位置的application.properties或者application.yml文件作为Spring boot的默认配置文件
 
@@ -742,7 +737,7 @@ SpringBoot会从这四个位置全部加载主配置文件；**互补配置**；
 
 java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --spring.config.location=G:/application.properties
 
-## 7、外部配置加载顺序
+### 外部配置加载顺序
 
 **==SpringBoot也可以从以下位置加载配置； 优先级从高到低；高优先级的配置覆盖低优先级的配置，所有的配置会形成互补配置==**
 
@@ -753,8 +748,6 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --spring.config.location=G
 java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --server.context-path=/abc
 
 多个配置用空格分开； --配置项=值
-
-
 
 2.来自java:comp/env的JNDI属性
 
@@ -792,7 +785,7 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
 [参考官方文档](https://docs.spring.io/spring-boot/docs/1.5.9.RELEASE/reference/htmlsingle/#boot-features-external-config)
 
-## 8、自动配置原理
+### 自动配置原理
 
 配置文件到底能写什么？怎么写？自动配置原理；
 
@@ -800,7 +793,7 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
 
 
-### 1、**自动配置原理：**
+#### **自动配置原理：**
 
 1）、SpringBoot启动的时候加载主配置类，开启了自动配置功能 ==@EnableAutoConfiguration==
 
@@ -966,12 +959,6 @@ public class HttpEncodingAutoConfiguration {
 
 一但这个配置类生效；这个配置类就会给容器中添加各种组件；这些组件的属性是从对应的properties类中获取的，这些类里面的每一个属性又是和配置文件绑定的；
 
-
-
-
-
-
-
 5）、所有在配置文件中能配置的属性都是在xxxxProperties类中封装者‘；配置文件能配置什么就可以参照某个功能对应的这个属性类
 
 ```java
@@ -1005,7 +992,7 @@ xxxxProperties:封装配置文件中相关属性；
 
 
 
-### 2、细节
+#### 细节
 
 
 
