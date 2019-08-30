@@ -45,6 +45,56 @@ Object.assign({}, state, {
       })
 ```
 
+### js布尔值转换
+
+> 使用Boolean()函数可以将其它类型强制转换为boolean
+
+#### number转boolean
+
+```js
+console.log(Boolean(123)) //true
+console.log(Boolean(Infinity)) //true
+
+console.log(Boolean(0)) //false
+console.log(Boolean(NaN)) //false
+```
+
+#### 字符串转boolean
+
+```js
+console.log(Boolean('abc')) //true
+console.log(Boolean('')) //false，除了空串，都是true
+```
+
+#### null和undefined
+
+```js
+console.log(Boolean(null))  //false
+console.log(Boolean(undefined))  //false
+```
+
+#### 对象转boolean
+
+> 对象都会转换为true
+
+```js
+console.log(Boolean({}))  //true
+console.log(Boolean({a:1}))  //true
+console.log(Boolean([]))  //true
+console.log(Boolean([1,2]))  //true
+```
+
+#### 总结
+
+> 使用Boolean(value)方法可以强制转换任意值为boolean类型,除了以下六个值，其他都是自动转为true：
+>
+> - undefined
+> - null
+> - -0
+> - +0
+> - NaN
+> - ‘’（空字符串）
+
 ### this的指向
 
 > ```js

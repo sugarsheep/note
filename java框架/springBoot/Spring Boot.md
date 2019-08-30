@@ -799,7 +799,7 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
 **2）、@EnableAutoConfiguration 作用：**
 
- -  利用EnableAutoConfigurationImportSelector给容器中导入一些组件？
+ - 利用EnableAutoConfigurationImportSelector给容器中导入一些组件？
 
 - 可以查看selectImports()方法的内容；
 
@@ -810,12 +810,11 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
     扫描所有jar包类路径下  META-INF/spring.factories
     把扫描到的这些文件的内容包装成properties对象
     从properties中获取到EnableAutoConfiguration.class类（类名）对应的值，然后把他们添加在容器中
-
+    
     ```
 
-    
 
-**==将 类路径下  META-INF/spring.factories 里面配置的所有EnableAutoConfiguration的值加入到了容器中；==**
+将 类路径下  META-INF/spring.factories 里面配置的所有EnableAutoConfiguration的值加入到了容器中；
 
 ```properties
 # Auto Configure
@@ -932,7 +931,7 @@ org.springframework.boot.autoconfigure.webservices.WebServicesAutoConfiguration
 
 @ConditionalOnClass(CharacterEncodingFilter.class)  //判断当前项目有没有这个类CharacterEncodingFilter；SpringMVC中进行乱码解决的过滤器；
 
-@ConditionalOnProperty(prefix = "spring.http.encoding", value = "enabled", matchIfMissing = true)  //判断配置文件中是否存在某个配置  spring.http.encoding.enabled；如果不存在，判断也是成立的
+@ConditionalOnProperty(prefix = "spring.http.encoding", value = "enabled", matchIfMissing = true)  //判断配置文件中是否存在某个配置  spring.http.encoding.enabled；matchIfMissing如果不存在，判断也是成立的
 //即使我们配置文件中不配置pring.http.encoding.enabled=true，也是默认生效的；
 public class HttpEncodingAutoConfiguration {
   
@@ -1000,26 +999,26 @@ xxxxProperties:封装配置文件中相关属性；
 
 作用：必须是@Conditional指定的条件成立，才给容器中添加组件，配置配里面的所有内容才生效；
 
-| @Conditional扩展注解                | 作用（判断是否满足当前指定条件）               |
-| ------------------------------- | ------------------------------ |
-| @ConditionalOnJava              | 系统的java版本是否符合要求                |
-| @ConditionalOnBean              | 容器中存在指定Bean；                   |
-| @ConditionalOnMissingBean       | 容器中不存在指定Bean；                  |
-| @ConditionalOnExpression        | 满足SpEL表达式指定                    |
-| @ConditionalOnClass             | 系统中有指定的类                       |
-| @ConditionalOnMissingClass      | 系统中没有指定的类                      |
-| @ConditionalOnSingleCandidate   | 容器中只有一个指定的Bean，或者这个Bean是首选Bean |
-| @ConditionalOnProperty          | 系统中指定的属性是否有指定的值                |
-| @ConditionalOnResource          | 类路径下是否存在指定资源文件                 |
-| @ConditionalOnWebApplication    | 当前是web环境                       |
-| @ConditionalOnNotWebApplication | 当前不是web环境                      |
-| @ConditionalOnJndi              | JNDI存在指定项                      |
+| @Conditional扩展注解二娃、、】【、 |                                                  |
+| ---------------------------------- | ------------------------------------------------ |
+| @ConditionalOnJava                 | 系统的java版本是否符合要求                       |
+| @ConditionalOnBean                 | 容器中存在指定Bean；                             |
+| @ConditionalOnMissingBean          | 容器中不存在指定Bean；                           |
+| @ConditionalOnExpression           | 满足SpEL表达式指定                               |
+| @ConditionalOnClass                | 系统中有指定的类                                 |
+| @ConditionalOnMissingClass         | 系统中没有指定的类                               |
+| @ConditionalOnSingleCandidate      | 容器中只有一个指定的Bean，或者这个Bean是首选Bean |
+| @ConditionalOnProperty             | 系统中指定的属性是否有指定的值                   |
+| @ConditionalOnResource             | 类路径下是否存在指定资源文件                     |
+| @ConditionalOnWebApplication       | 当前是web环境                                    |
+| @ConditionalOnNotWebApplication    | 当前不是web环境                                  |
+| @ConditionalOnJndi                 | JNDI存在指定项                                   |
 
 **自动配置类必须在一定的条件下才能生效；**
 
 我们怎么知道哪些自动配置类生效；
 
-**==我们可以通过启用  debug=true属性；来让控制台打印自动配置报告==**，这样我们就可以很方便的知道哪些自动配置类生效；
+**我们可以通过启用  debug=true（配置文件中配置）属性；来让控制台打印自动配置报告**，这样我们就可以很方便的知道哪些自动配置类生效；
 
 ```java
 =========================
@@ -1052,9 +1051,9 @@ Negative matches:（没有启动，没有匹配成功的自动配置类）
 
 
 
-# 三、日志
+## 日志
 
-## 1、日志框架
+### 日志框架
 
  小张；开发一个大型系统；
 
@@ -1096,9 +1095,9 @@ SpringBoot：底层是Spring框架，Spring框架默认是用JCL；‘
 
 
 
-## 2、SLF4j使用
+### SLF4j使用
 
-### 1、如何在系统中使用SLF4j   https://www.slf4j.org
+#### 如何在系统中使用SLF4j   https://www.slf4j.org
 
 以后开发的时候，日志记录方法的调用，不应该来直接调用日志的实现类，而是调用日志抽象层里面的方法；
 
@@ -1122,7 +1121,7 @@ public class HelloWorld {
 
 每一个日志的实现框架都有自己的配置文件。使用slf4j以后，**配置文件还是做成日志实现框架自己本身的配置文件；**
 
-### 2、遗留问题
+#### 遗留问题
 
 a（slf4j+logback）: Spring（commons-logging）、Hibernate（jboss-logging）、MyBatis、xxxx
 
@@ -1140,7 +1139,7 @@ a（slf4j+logback）: Spring（commons-logging）、Hibernate（jboss-logging）
 
 
 
-## 3、SpringBoot日志关系
+### SpringBoot日志关系
 
 ```xml
 		<dependency>
@@ -1204,9 +1203,9 @@ public abstract class LogFactory {
 
 **==SpringBoot能自动适配所有的日志，而且底层使用slf4j+logback的方式记录日志，引入其他框架的时候，只需要把这个框架依赖的日志框架排除掉即可；==**
 
-## 4、日志使用；
+### 日志使用；
 
-### 1、默认配置
+#### 认配置
 
 SpringBoot默认帮我们配置好了日志；
 
@@ -1268,7 +1267,7 @@ logging.pattern.file=%d{yyyy-MM-dd} === [%thread] === %-5level === %logger{50} =
 | 指定文件名        | (none)       | my.log   | 输出日志到my.log文件           |
 | (none)       | 指定目录         | /var/log | 输出到指定目录的 spring.log 文件中 |
 
-### 2、指定配置
+#### 指定配置
 
 给类路径下放上每个日志框架自己的配置文件即可；SpringBoot就不使用他默认配置的了
 
@@ -1320,7 +1319,7 @@ logback.xml：直接就被日志框架识别了；
 
  `no applicable action for [springProfile]`
 
-## 5、切换日志框架
+### 切换日志框架
 
 可以按照slf4j的日志适配图，进行相关的切换；
 
@@ -1375,9 +1374,9 @@ slf4j+log4j的方式；
 
 -----------------
 
-# 四、Web开发
+## Web开发
 
-## 1、简介
+### 简介
 
 
 
@@ -1403,7 +1402,7 @@ xxxxProperties:配置类来封装配置文件的内容；
 
 
 
-## 2、SpringBoot对静态资源的映射规则；
+### SpringBoot对静态资源的映射规则；
 
 ```java
 @ConfigurationProperties(prefix = "spring.resources", ignoreUnknownFields = false)
@@ -1524,7 +1523,7 @@ localhost:8080/abc ===  去静态资源文件夹里面找abc
 
 
 
-## 3、模板引擎
+### 模板引擎
 
 JSP、Velocity、Freemarker、Thymeleaf
 
@@ -1538,7 +1537,7 @@ SpringBoot推荐的Thymeleaf；
 
 
 
-### 1、引入thymeleaf；
+#### 引入thymeleaf；
 
 ```xml
 		<dependency>
@@ -1557,7 +1556,7 @@ SpringBoot推荐的Thymeleaf；
 
 
 
-### 2、Thymeleaf使用
+#### Thymeleaf使用
 
 ```java
 @ConfigurationProperties(prefix = "spring.thymeleaf")
@@ -1600,7 +1599,7 @@ public class ThymeleafProperties {
 </html>
 ```
 
-### 3、语法规则
+#### 语法规则
 
 1）、th:text；改变当前元素里面的文本内容；
 
@@ -1684,11 +1683,11 @@ Special tokens:
     No-Operation: _ 
 ```
 
-## 4、SpringMVC自动配置
+### SpringMVC自动配置
 
 https://docs.spring.io/spring-boot/docs/1.5.10.RELEASE/reference/htmlsingle/#boot-features-developing-web-applications
 
-### 1. Spring MVC auto-configuration
+#### Spring MVC auto-configuration
 
 Spring Boot 自动配置好了SpringMVC
 
@@ -1749,7 +1748,7 @@ If you want to keep Spring Boot MVC features, and you just want to add additiona
 
 If you want to take complete control of Spring MVC, you can add your own `@Configuration` annotated with `@EnableWebMvc`.
 
-### 2、扩展SpringMVC
+#### 扩展SpringMVC
 
 ```xml
     <mvc:view-controller path="/hello" view-name="success"/>
@@ -1812,7 +1811,7 @@ public class MyMvcConfig extends WebMvcConfigurerAdapter {
 
 ​	效果：SpringMVC的自动配置和我们的扩展配置都会起作用；
 
-### 3、全面接管SpringMVC；
+#### 全面接管SpringMVC；
 
 SpringBoot对SpringMVC的自动配置不需要了，所有都是我们自己配置；所有的SpringMVC的自动配置都失效了
 
@@ -1872,7 +1871,7 @@ public class WebMvcAutoConfiguration {
 
 
 
-## 5、如何修改SpringBoot的默认配置
+### 如何修改SpringBoot的默认配置
 
 模式：
 
@@ -1882,9 +1881,9 @@ public class WebMvcAutoConfiguration {
 
 ​	3）、在SpringBoot中会有很多的xxxCustomizer帮助我们进行定制配置
 
-## 6、RestfulCRUD
+### RestfulCRUD
 
-### 1）、默认访问首页
+#### 默认访问首页
 
 ```java
 
@@ -1916,7 +1915,7 @@ public class MyMvcConfig extends WebMvcConfigurerAdapter {
 
 ```
 
-### 2）、国际化
+#### 国际化
 
 **1）、编写国际化配置文件；**
 
@@ -2073,7 +2072,7 @@ public class MyLocaleResolver implements LocaleResolver {
 
 ```
 
-### 3）、登陆
+#### 登陆
 
 开发期间模板引擎页面修改以后，要实时生效
 
@@ -2096,7 +2095,7 @@ spring.thymeleaf.cache=false
 
 
 
-### 4）、拦截器进行登陆检查
+#### 拦截器进行登陆检查
 
 拦截器
 
@@ -2165,7 +2164,7 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
     }
 ```
 
-### 5）、CRUD-员工列表
+#### CRUD-员工列表
 
 实验要求：
 
@@ -2194,7 +2193,7 @@ URI：  /资源名称/资源标识       HTTP请求方式区分对资源CRUD操�
 
 3）、员工列表：
 
-#### thymeleaf公共页面元素抽取
+thymeleaf公共页面元素抽取
 
 ```html
 1、抽取公共片段
@@ -2276,7 +2275,7 @@ insert的公共片段在div标签中
 <div th:replace="commons/bar::#sidebar(activeUri='emps')"></div>
 ```
 
-### 6）、CRUD-员工添加
+#### CRUD-员工添加
 
 添加页面
 
@@ -2329,7 +2328,7 @@ insert的公共片段在div标签中
 
 默认日期是按照/的方式；
 
-### 7）、CRUD-员工修改
+#### CRUD-员工修改
 
 修改添加二合一表单
 
@@ -2378,7 +2377,7 @@ insert的公共片段在div标签中
 </form>
 ```
 
-### 8）、CRUD-员工删除
+#### CRUD-员工删除
 
 ```html
 <tr th:each="emp:${emps}">
@@ -2406,9 +2405,9 @@ insert的公共片段在div标签中
 
 
 
-## 7、错误处理机制
+### 错误处理机制
 
-### 1）、SpringBoot默认的错误处理机制
+#### SpringBoot默认的错误处理机制
 
 默认效果：
 
@@ -2542,9 +2541,9 @@ protected ModelAndView resolveErrorView(HttpServletRequest request,
 }
 ```
 
-### 2）、如果定制错误响应：
+#### 如果定制错误响应：
 
-#### 	**1）、如何定制错误的页面；**
+##### 	如何定制错误的页面；
 
 ​			**1）、有模板引擎的情况下；error/状态码;** 【将错误页面命名为  错误状态码.html 放在模板引擎文件夹里面的 error文件夹下】，发生此状态码的错误就会来到  对应的页面；
 
@@ -2570,7 +2569,7 @@ protected ModelAndView resolveErrorView(HttpServletRequest request,
 
 
 
-#### 	2）、如何定制错误的json数据；
+##### 	如何定制错误的json数据；
 
 ​		1）、自定义异常处理&返回定制json数据；
 
@@ -2611,7 +2610,7 @@ public class MyExceptionHandler {
     }
 ```
 
-#### 	3）、将我们的定制数据携带出去；
+##### 	将我们的定制数据携带出去；
 
 出现错误以后，会来到/error请求，会被BasicErrorController处理，响应出去可以获取的数据是由getErrorAttributes得到的（是AbstractErrorController（ErrorController）规定的方法）；
 
@@ -2643,7 +2642,7 @@ public class MyErrorAttributes extends DefaultErrorAttributes {
 
 
 
-## 8、配置嵌入式Servlet容器
+### 配置嵌入式Servlet容器
 
 SpringBoot默认使用Tomcat作为嵌入式的Servlet容器；
 
@@ -2653,7 +2652,7 @@ SpringBoot默认使用Tomcat作为嵌入式的Servlet容器；
 
 问题？
 
-### 1）、如何定制和修改Servlet容器的相关配置；
+#### 如何定制和修改Servlet容器的相关配置；
 
 1、修改和server有关的配置（ServerProperties【也是EmbeddedServletContainerCustomizer】）；
 
@@ -2685,7 +2684,7 @@ public EmbeddedServletContainerCustomizer embeddedServletContainerCustomizer(){
 }
 ```
 
-### 2）、注册Servlet三大组件【Servlet、Filter、Listener】
+#### 注册Servlet三大组件【Servlet、Filter、Listener】
 
 由于SpringBoot默认是以jar包的方式启动嵌入式的Servlet容器来启动SpringBoot的web应用，没有web.xml文件。
 
@@ -2754,7 +2753,7 @@ public ServletRegistrationBean dispatcherServletRegistration(
 
 2）、SpringBoot能不能支持其他的Servlet容器；
 
-### 3）、替换为其他嵌入式Servlet容器
+#### 替换为其他嵌入式Servlet容器
 
 ![](images/搜狗截图20180302114401.png)
 
@@ -2814,7 +2813,7 @@ Undertow
 </dependency>
 ```
 
-### 4）、嵌入式Servlet容器自动配置原理；
+#### 嵌入式Servlet容器自动配置原理；
 
 
 
@@ -3087,7 +3086,7 @@ EmbeddedServletContainerFactory containerFactory = getEmbeddedServletContainerFa
 
 
 
-## 9、使用外置的Servlet容器
+#### 使用外置的Servlet容器
 
 嵌入式Servlet容器：应用打成可执行的jar
 
@@ -3099,7 +3098,7 @@ EmbeddedServletContainerFactory containerFactory = getEmbeddedServletContainerFa
 
 外置的Servlet容器：外面安装Tomcat---应用war包的方式打包；
 
-### 步骤
+##### 步骤
 
 1）、必须创建一个war项目；（利用idea创建好目录结构）
 
@@ -3129,7 +3128,7 @@ public class ServletInitializer extends SpringBootServletInitializer {
 
 4）、启动服务器就可以使用；
 
-### 原理
+#### 原理
 
 jar包：执行SpringBoot主类的main方法，启动ioc容器，创建嵌入式的Servlet容器；
 
@@ -3254,9 +3253,9 @@ public ConfigurableApplicationContext run(String... args) {
 
 
 
-# 五、Docker
+## Docker
 
-## 1、简介
+### 简介
 
 **Docker**是一个开源的应用容器引擎；是一个轻量级容器技术；
 
@@ -3270,7 +3269,7 @@ Docker支持将软件编译成一个镜像；然后在镜像中各种软件做�
 
 ![](images/搜狗截图20180303145531.png)
 
-## 2、核心概念
+### 核心概念
 
 docker主机(Host)：安装了Docker程序的机器（Docker直接安装在操作系统之上）；
 
@@ -3294,9 +3293,9 @@ docker容器(Container)：镜像启动后的实例称为一个容器；容器是
 
 4）、对容器的启动停止就是对软件的启动停止；
 
-## 3、安装Docker
+### 安装Docker
 
-#### 1）、安装linux虚拟机
+#### 安装linux虚拟机
 
 ​	1）、VMWare、VirtualBox（安装）；
 
@@ -3324,7 +3323,7 @@ ip addr
 
 ​	8）、使用客户端连接linux；
 
-#### 2）、在linux虚拟机上安装docker
+#### 在linux虚拟机上安装docker
 
 步骤：
 
@@ -3345,9 +3344,9 @@ Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service 
 systemctl stop docker
 ```
 
-## 4、Docker常用命令&操作
+### Docker常用命令&操作
 
-### 1）、镜像操作
+#### 镜像操作
 
 | 操作 | 命令                                            | 说明                                                     |
 | ---- | ----------------------------------------------- | -------------------------------------------------------- |
@@ -3358,7 +3357,7 @@ systemctl stop docker
 
 https://hub.docker.com/
 
-### 2）、容器操作
+#### 容器操作
 
 软件镜像（QQ安装程序）----运行镜像----产生一个容器（正在运行的软件，运行的QQ）；
 
@@ -3400,7 +3399,7 @@ https://docs.docker.com/engine/reference/commandline/docker/
 
 
 
-### 3）、安装MySQL示例
+#### 安装MySQL示例
 
 ```shell
 docker pull mysql
@@ -3465,9 +3464,9 @@ docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:tag --
 
 
 
-# 六、SpringBoot与数据访问
+## SpringBoot与数据访问
 
-## 1、JDBC
+### JDBC
 
 ```xml
 <dependency>
@@ -3550,7 +3549,7 @@ schema-*.sql、data-*.sql
 
 5、操作数据库：自动配置了JdbcTemplate操作数据库
 
-## 2、整合Druid数据源
+### 整合Druid数据源
 
 ```java
 导入druid数据源
@@ -3599,7 +3598,7 @@ public class DruidConfig {
 
 ```
 
-## 3、整合MyBatis
+### 整合MyBatis
 
 ```xml
 		<dependency>
@@ -3619,7 +3618,7 @@ public class DruidConfig {
 
 ​	3）、创建JavaBean
 
-### 	4）、注解版
+#### 	注解版
 
 ```java
 //指定这是一个操作数据库的mapper
@@ -3676,7 +3675,7 @@ public class SpringBoot06DataMybatisApplication {
 }
 ```
 
-### 5）、配置文件版
+#### 配置文件版
 
 ```yaml
 mybatis:
@@ -3688,15 +3687,13 @@ mybatis:
 
 http://www.mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/
 
+### 整合SpringData JPA
 
-
-## 4、整合SpringData JPA
-
-### 1）、SpringData简介
+#### SpringData简介
 
 ![](images/搜狗截图20180306105412.png)
 
-### 2）、整合SpringData JPA
+#### 整合SpringData JPA
 
 JPA:ORM（Object Relational Mapping）；
 
@@ -3741,7 +3738,7 @@ spring:
 
 
 
-# 七、启动配置原理
+## 启动配置原理
 
 几个重要的事件回调机制
 
@@ -3763,7 +3760,7 @@ spring:
 
 启动流程：
 
-## **1、创建SpringApplication对象**
+### **创建SpringApplication对象**
 
 ```java
 initialize(sources);
@@ -3788,7 +3785,7 @@ private void initialize(Object[] sources) {
 
 ![](images/搜狗截图20180306145855.png)
 
-## 2、运行run方法
+### 运行run方法
 
 ```java
 public ConfigurableApplicationContext run(String... args) {
@@ -3848,7 +3845,7 @@ public ConfigurableApplicationContext run(String... args) {
 }
 ```
 
-## 3、事件监听机制
+### 事件监听机制
 
 配置在META-INF/spring.factories
 
@@ -3947,7 +3944,7 @@ public class HelloCommandLineRunner implements CommandLineRunner {
 
 
 
-# 八、自定义starter
+## 自定义starter
 
 starter：
 
@@ -4137,7 +4134,7 @@ public class HelloServiceAutoConfiguration {
 
 ```
 
-# springBoot解决跨域
+## springBoot解决跨域
 
 ```java
 import org.springframework.context.annotation.Bean;
@@ -4167,7 +4164,7 @@ public class CorsConfig {
 
 
 
-# 更多SpringBoot整合示例
+## 更多SpringBoot整合示例
 
 https://github.com/spring-projects/spring-boot/tree/master/spring-boot-samples
 
