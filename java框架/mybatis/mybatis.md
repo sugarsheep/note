@@ -375,7 +375,7 @@ public interface EmployeeMapper {
 >
 >   - MyBatis3.4以前的版本需要我们手动注册这些处理器，以后的版本都是自动注册的
 >
->     ![1567338149822](images/1567338149822.png)
+>    ![1567338149822](images/1567338149822.png)
 >
 > - 自定义类型处理器
 >
@@ -408,7 +408,7 @@ public interface EmployeeMapper {
 > type：JDBC | MANAGED | 自定义
 >
 > - JDBC：使用了JDBC 的提交和回滚设置，依赖于从数据源得到的连接来管理事务范围。JdbcTransactionFactory
-> - MANAGED：不提交或回滚一个连接、让容器来管理事务的整个生命周期（比如JEE 应用服务器的上下文）。ManagedTransactionFactory
+> - MANAGED：不提交或回滚一个连接、让容器来管理事务的整个生命周期（比如J2EE 应用服务器的上下文）。ManagedTransactionFactory
 > - 自定义：实现TransactionFactory接口，type=全类名/别名
 
 #### dataSource
@@ -422,3 +422,32 @@ public interface EmployeeMapper {
 >
 > **实际开发中我们使用Spring管理数据源，并进行事务控制的配置来覆盖上述配置**
 
+### databaseIdProvider环境
+
+> - 可以和environments配合使用，做到动态切换数据库
+>
+> - MyBatis 可以根据不同的数据库厂商执行不同的语句，为不同的厂商起别名如下，也可以不起，则别名为name值
+>
+>   ![1567436854779](images/1567436854779.png)
+>
+> - Type：DB_VENDOR
+>
+>   > - 使用MyBatis提供的VendorDatabaseIdProvider解析数据库厂商标识（根据不同的驱动判断）。也可以实现DatabaseIdProvider接口来自定义
+>   > - 会通过DatabaseMetaData#getDatabaseProductName()返回的字符串进行设置。由于通常情况下这个字符串都非常长而且相同产品的不同版本会返回不同的值，所以最好通过设置属性别名来使其变短
+>
+> - Property-name：数据库厂商标识
+>
+> - Property-value：为标识起一个别名，方便SQL语句使用databaseId属性引用，在sql映射文件中可以使用databaseId进行引用，如：
+>
+>   ![1567437020462](images/1567437020462.png)
+>
+> - MyBatis匹配规则如下：
+>
+>   > - 如果没有配置databaseIdProvider标签，那么databaseId=null
+>   > - 如果配置了databaseIdProvider标签，使用标签配置的name去匹配数据库信息，匹配上设置databaseId=配置指定的值，否则依旧为null
+>   > - 如果databaseId不为null，他只会找到配置databaseId的sql语句
+>   > - MyBatis 会加载不带databaseId属性和带有匹配当前数据库databaseId 属性的所有语句。如果同时找到带有databaseId 和不带databaseId 的相同语句，则后者会被舍弃，mybatis会使用更精确的
+>
+>   
+
+### mapper映射
