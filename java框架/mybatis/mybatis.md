@@ -451,3 +451,54 @@ public interface EmployeeMapper {
 >   
 
 ### mapper映射
+
+#### 逐个注册SQL映射文件
+
+> - mapper逐个注册SQL映射文件
+>
+>   > - resource:用于引用类路径下资源
+>   >
+>   > - url:网络资源或磁盘文件资源
+>   >
+>   > - class：引用或注册接口，值为**接口全类名**
+>   >
+>   >   - **若有sql映射文件**，接口和映射文件必须放在同一目录下，并且除后缀名称必须相同，否则mybatis不知道接口和哪个配置文件进行映射
+>   >   - **若没有sql映射文件**，可以使用基于注解的方式指定sql
+>   >
+>   >   ```java
+>   >   public interface EmployeeMapper2 {
+>   >       @Select("select * from employee where id = #{id}")
+>   >       Employee getEmpById(Integer id);
+>   >   }
+>   >   ```
+>
+>   ![1567515308900](images/1567515308900.png)
+
+#### 批量注册
+
+> - 这种方式要求SQL映射文件名必须和接口名相同并且在同一目录下,或者使用基于注解的方式
+> - 为了将sql配置文件和java代码分开，可以建立2个根目录，并在2个目录下创建同样的包
+>
+> ```xml
+>     <mappers>
+>         <package name="com.sugar.dao"/>
+>     </mappers>
+> ```
+
+## MyBatis-映射文件
+
+### 作用
+
+> 映射文件指导着MyBatis如何进行数据库增删改查，有着非常重要的意义
+
+### 常用标签
+
+> - cache –命名空间的二级缓存配置
+> - cache-ref –其他命名空间缓存配置的引用。
+> - resultMap–自定义结果集映射
+> - parameterMap –已废弃！老式风格的参数映射
+> - sql –抽取可重用语句块。
+> - insert –映射插入语句
+> - update –映射更新语句
+> - delete –映射删除语句
+> - select –映射查询语句
