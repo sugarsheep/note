@@ -502,3 +502,223 @@ public interface EmployeeMapper {
 > - update –映射更新语句
 > - delete –映射删除语句
 > - select –映射查询语句
+
+### 增删改查标签
+
+#### 注意
+
+- ```
+  sqlSession = sqlSessionFactory.openSession(); //sqlSession必须手动提交数据，即事务
+  sqlSession.commit();
+  或
+  sqlSessionFactory.openSession(true) //sqlSession会自动提交
+  ```
+
+- 普通的方法mybatis允许的返回值类型为Integer,Long,Boolean,void,即影响的行数或是否执行成功
+
+#### 接口类
+
+```java
+public interface EmployeeMapper {
+
+    Employee getEmpById(@Param("id") Integer id);
+
+    int insertEmployee(@Param("employee") Employee employee);
+
+    int updateEmployee(@Param("employee") Employee employee);
+
+    int deleteEmployeeById(@Param("id") Integer id);
+}
+```
+
+#### 映射文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sugar.dao.EmployeeMapper">
+    <select id="getEmpById" resultType="emp">
+		select * from employee where id = #{id}
+	</select>
+
+    <insert id="insertEmployee">
+        INSERT INTO employee(id,last_name,gender,email)
+        VALUES (#{employee.id},#{employee.lastName},#{employee.gender},#{employee.email})
+    </insert>
+
+    <update id="updateEmployee">
+        UPDATE employee
+        SET last_name=#{employee.lastName},gender=#{employee.gender},email=#{employee.email}
+        where id=#{employee.id}
+    </update>
+
+    <delete id="deleteEmployeeById">
+        DELETE FROM employee WHERE id=#{id}
+    </delete>
+</mapper>
+```
+
+### mysql获取自增的主键
+
+> 若数据库支持自动生成主键的字段（比如MySQL 和SQL Server），则可以设置useGeneratedKeys=”true”，然后再把keyProperty设置到目标属性上。
+
+#### mysql设置自增主键
+
+```sql
+alter table employee change column id id int not null primary key auto_increment;
+```
+
+#### mybatis配置
+
+> 配置useGeneratedKeys属性为true，keyProperty的值为主键字段
+
+```xml
+    <insert id="insertEmployee" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee(id,last_name,gender,email)
+        VALUES (#{employee.id},#{employee.lastName},#{employee.gender},#{employee.email})
+    </insert>
+```
+
+### oracle使用序列生成主键
+
+> 而对于不支持自增型主键的数据库（例如Oracle），则可以使用selectKey子元素：selectKey 元素将会首先运行，id 会被设置，然后插入语句会被调用
+
+#### 获取序列的下一个值
+
+```sql
+select employee_seq.nextval from dual
+```
+
+#### mybatis配置
+
+执行流程：
+
+> - 由于order属性配置的是BEFORE，则selectKey中的sql会先执行，就会获取到序列的下一个值
+> - 根据keyProperty属性配置的值将查询结果封装的javabean对应的属性中
+> - 执行下面的sql
+
+```xml
+    <insert id="insertEmployee" useGeneratedKeys="true" keyProperty="id" databaseId="oracle">
+        <selectKey keyProperty="id" order="BEFORE" resultType="Integer">
+            select employee_seq.nextval from dual
+        </selectKey>
+        INSERT INTO employee(id,last_name,gender,email)
+        VALUES (#{id},#{lastName},#{gender},#{email})
+    </insert>
+```
+
+order值配置为AFTER的情况
+
+> employee_seq.currval可以获取到当前序列的值
+>
+> 注意：AFTER模式下获取currval可能会有问题，因为可能同时插入多条数据，故可能获取到的currval值为最后的值
+
+```xml
+    <insert id="insertEmployee" useGeneratedKeys="true" keyProperty="id" databaseId="oracle">
+        <selectKey keyProperty="id" order="AFTER" resultType="Integer">
+            select employee_seq.currval from dual
+        </selectKey>
+        INSERT INTO employee(id,last_name,gender,email)
+        VALUES (employee_seq.nextval,#{lastName},#{gender},#{email})
+    </insert>
+```
+
+### 参数处理
+
+> mybatis会将参数封装到一个map中，可以使用**param1，param2，0，1**这样的key取值
+
+#### 单个参数、多个参数、命名参数
+
+- **单个参数**：可以接受基本类型，对象类型，集合类型的值。这种情况MyBatis可直接使用这个参数，不需要经过任何处理，参数名可以和映射文件中参数名不对应
+
+  ```java
+  Employee getEmpById(@Param("id") Integer id);
+  
+  <select id="getEmpById" resultType="emp">
+  	select * from employee where id = #{id111}
+  </select>
+  ```
+
+- **多个参数**：任意多个参数，都会被MyBatis重新包装成一个Map传入。Map的key是param1，param2，0，1…，值就是参数的值。不推荐使用，参数不直观
+
+- **命名参数**：为参数使用`@Param`起一个名字，MyBatis就会将这些参数封装进map中，key就是我们自己指定的名字
+
+- **POJO**：当这些参数属于我们业务POJO时，我们直接传递POJO
+
+- **Map**：我们也可以封装多个参数为map，直接传递
+
+- 特殊情况
+
+  > 1. 一个参数使用了注解，取值方式：#{id},#{param2}
+  >
+  >    ```java
+  >    Employee getEmpById(@Param("id") Integer id,String name);
+  >    ```
+  >
+  > 2. 一个参数使用了注解，另一个是javabean，取值方式：#{id},#{param2.name}
+  >
+  >    ```java
+  >    Employee getEmpById(@Param("id") Integer id,Employee emp);
+  >    ```
+  >
+  > 3. 参数是集合（List,Set等）或数组，
+  >
+  >    - 若参数是集合，key为collection，若集合为List，则key为list，
+  >    - 若参数是数组，则key为array
+
+#### 参数解析源码
+
+> - names是一个map，key为参数缩影，value为参数名
+>
+>   > 若参数标注了@Param注解，则参数名为注解的value值，否则若全局配置了useActualParamName(jdk1.8有效)，则参数名为方法参数名，否则参数名为索引值
+>
+> - 
+
+```java
+  public Object getNamedParams(Object[] args) {
+    final int paramCount = names.size();
+      //1.参数为空直接返回
+    if (args == null || paramCount == 0) {
+      return null;
+        //2.参数只有一个并且没有标注@Param注解，则返回第一个参数
+    } else if (!hasParamAnnotation && paramCount == 1) {
+      return args[names.firstKey()];
+        //3.多个参数或者参数有@Param注解，会封装一个map
+    } else {
+        //k:参数名，v:参数值
+      final Map<String, Object> param = new ParamMap<>();
+      int i = 0;
+      for (Map.Entry<Integer, String> entry : names.entrySet()) {
+        param.put(entry.getValue(), args[entry.getKey()]);
+        // add generic param names (param1, param2, ...)
+        final String genericParamName = GENERIC_NAME_PREFIX + String.valueOf(i + 1);
+        // ensure not to overwrite parameter named with @Param
+        if (!names.containsValue(genericParamName)) {
+          param.put(genericParamName, args[entry.getKey()]);
+        }
+        i++;
+      }
+      return param;
+    }
+  }
+```
+
+#### 参数取值时#和$的区别
+
+> #：以预编译的形式将参数设置到sql语句中，之前是使用?作为占位符,使用PreparedStatement,可以防止sql注入
+>
+> $：直接替换参数的值
+>
+> **何时使用$**:原生jdbc不能使用占位符的地方就可以使用$符号进行取值，如数据库表按年份进行了拆分，可以动态拼接表名
+>
+> ```sql
+> select * from ${year}_salary
+> select * from salary order by ${year}
+> ```
+
+#### 使用#取值时指定参数的相关规则
+
+> 
+
