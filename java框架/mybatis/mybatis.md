@@ -627,7 +627,7 @@ order值配置为AFTER的情况
 
 ### 参数处理
 
-> mybatis会将参数封装到一个map中，可以使用**param1，param2，0，1**这样的key取值
+> mybatis在参数只有一个并且没有标注@Param注解，会直接返回第一个参数，否则会将参数封装到一个map中，可以使用**param1，param2，0，1**这样的key取值
 
 #### 单个参数、多个参数、命名参数
 
@@ -720,5 +720,482 @@ order值配置为AFTER的情况
 
 #### 使用#取值时指定参数的相关规则
 
+> - javaType：规定参数的类型，通常可以从参数对象来确定；
+>
+> - jdbcType：指定数据库对应字段类型；如果null 被当作值来传递，对于所有可能为空的列，jdbcType 需要被设置
+>
+>   > - 数据为null的时候，有些数据库可能无法识别mybatis对null的默认处理，如oracle会报错jdbcType OTHER，要解决这个为题，需要指定jdbcType=NULL
+>   >
+>   >   ```xml
+>   >   #{name,jdbcType=NULL}
+>   >   ```
+>   >
+>   > - 方法2：在全局配置中设置jdbcTypeForNull=NULL
+>   >
+>   >   ```xml
+>   >       <settings>
+>   >           <setting name="mapUnderscoreToCamelCase" value="true"/>
+>   >           <setting name="jdbcTypeForNull" value="NULL"/>
+>   >       </settings>
+>   >   ```
+>   >
+>   > - 
+>
+> - mode：用于存储过程，允许指定IN，OUT 或INOUT 参数。如果参数为OUT 或INOUT，参数对象属性的真实值将会被改变，就像在获取输出参数时所期望的那样
+>
+> - numericScala：对于数值类型，还可以设置小数点后保留的位数
+>
+> - resultMap：结果集封装
+>
+> - typeHandler：类型处理器
+>
+> - jdbcTypeName：与jdbcType相同
+>
+> - expression：暂未实现
+
+### select标签
+
+> - Select元素来定义查询操作
+>
+> - id：唯一标识符,用来引用这条语句，需要和接口的方法名一致
+>
+> - parameterType:参数类型,可以不传，MyBatis会根据TypeHandler自动推断
+>
+> - resultType:返回值类型,别名或者全类名，如果返回的是集合，定义集合中元素的类型。不能和resultMap同时使用
+>
+>   > 自动映射配置
+>   >
+>   > ```
+>   > 全局setting设置
+>   > –autoMappingBehavior默认是PARTIAL，开启自动映射的功能。唯一的要求是列名和javaBean属性名一致
+>   > –如果autoMappingBehavior设置为null则会取消自动映射
+>   > –数据库字段命名规范，POJO属性符合驼峰命名法，如A_COLUMNaColumn，我们可以开启自动驼峰命名规则映射功能，mapUnderscoreToCamelCase=true。
+>   > ```
+>
+> - resultMap：自定义结果映射规则
+
+#### 返回List
+
+> resultType指定为集合元素的类型即可
+>
+> ```xml
+>     <select id="getEmpLike" resultType="com.sugar.bean.Employee">
+>         select * from employee where last_name like #{keyword}
+>     </select>
+> ```
+>
+> ```java
+>         List<Employee> employeeList = employeeMapper.getEmpLike("%zhangsan%");
+> ```
+
+#### 封装map
+
+**1.封装成一个简单map**
+
+> resultType指定为map，可以指定为map是因为mybatis默认为许多常用的java类起了别名
+>
+> ```xml
+>     <select id="getEmpByIdReturnMap" resultType="map">
+>         select * from employee where id = #{id}
+>     </select>
+> ```
+>
+> 结果
+>
+> ```
+> {gender=0, last_name=zhangsan, id=1, email=zhangsan@qq.com}
+> ```
+
+2.多条数据封装成Map<key,Employee>的形式
+
+> resultType指定为map中value的类型，key通过在方法上使用@MapKey注解声明，值为javaBean的某个属性
+>
+> ```xml
+>     <select id="getEmpByLastName" resultType="com.sugar.bean.Employee">
+>         select * from employee where last_name like #{name}
+>     </select>
+> ```
+>
+> ```java
+>     @MapKey("id")
+>     Map<Integer,Employee> getEmpByLastName(String name);
+> ```
+
+#### 使用resultMap
+
+##### 自定义结果映射规则
+
+> ```xml
+>     <resultMap id="empResult" type="com.sugar.bean.Employee">
+>         <!--用于指定主键映射规则，也可以使用result标签定义，但是使用id标签mybatis底层会进行优化-->
+>         <id column="id" property="id"/>
+>         <!--定义普通列的映射规则-->
+>         <result column="last_name" property="lastName"/>
+>         <result column="gender" property="gender"/>
+>         <result column="email" property="email"/>
+>     </resultMap>
 > 
+>     <select id="getEmpById" resultMap="empResult">
+> 		select * from employee where id = #{id}
+> 	</select>
+> ```
+
+##### 关联查询结果封装
+
+>javaBean的属性是另一个javaBean
+>  ```xml
+>     <resultMap id="empResult" type="com.sugar.bean.Employee">
+>         <!--用于指定主键映射规则，也可以使用result标签定义，但是使用id标签mybatis底层会进行优化-->
+>         <id column="emp_id" property="empId"/>
+>         <!--定义普通列的映射规则-->
+>         <result column="last_name" property="lastName"/>
+>         <result column="gender" property="gender"/>
+>         <result column="email" property="email"/>
+>         <!--级联属性设置-->
+>         <result column="dept_id" property="dept.deptId"/>
+>         <result column="dept_name" property="dept.deptName"/>
+>     </resultMap>
+> 
+>     <select id="getEmpAndDept" resultMap="empResult">
+>         select e.emp_id, e.last_name, e.gender, e.email, d.dept_id, d.dept_name
+>         from employee e,
+>              dept d
+>         where e.emp_dept = d.dept_id
+>           and e.emp_id = #{id}
+>     </select>
+> ```
+>
+> ```java
+> public class Employee {
+>     private Integer empId;
+>     private String lastName;
+>     private String gender;
+>     private String email;
+>     private Dept dept;
+> }
+> ```
+
+##### association定义级联属性封装规则
+
+> ```xml
+>     <resultMap id="empResult" type="com.sugar.bean.Employee">
+>         <!--用于指定主键映射规则，也可以使用result标签定义，但是使用id标签mybatis底层会进行优化-->
+>         <id column="emp_id" property="empId"/>
+>         <!--定义普通列的映射规则-->
+>         <result column="last_name" property="lastName"/>
+>         <result column="gender" property="gender"/>
+>         <result column="email" property="email"/>
+>         <!--级联属性设置-->
+>         <!--property指定联合的属性（javaBean的某个属性），javaType指定该属性的类型-->
+>         <association property="dept" javaType="com.sugar.bean.Dept">
+>             <id column="dept_id" property="deptId"/>
+>             <result column="dept_name" property="deptName"/>
+>         </association>
+>     </resultMap>
+> 
+>     <select id="getEmpAndDept" resultMap="empResult">
+>         select e.emp_id, e.last_name, e.gender, e.email, d.dept_id, d.dept_name
+>         from employee e,
+>              dept d
+>         where e.emp_dept = d.dept_id
+>           and e.emp_id = #{id}
+>     </select>
+> ```
+
+##### association分步查询
+
+> 使用分步查询就不用使用关联查询的sql，就可以使sql变得简洁，功能分离
+>
+> 缺点：每次查员工信息都会将部门一次一起查出，会发两次sql
+
+```xml
+    <resultMap id="empResult" type="com.sugar.bean.Employee">
+        <!--用于指定主键映射规则，也可以使用result标签定义，但是使用id标签mybatis底层会进行优化-->
+        <id column="emp_id" property="empId"/>
+        <!--定义普通列的映射规则-->
+        <result column="last_name" property="lastName"/>
+        <result column="gender" property="gender"/>
+        <result column="email" property="email"/>
+        <!--级联属性设置-->
+        <!--property指定联合的属性（javaBean的某个属性>
+        <!-select指定使用哪个接口方法进行关联查询-->
+        <!--column指定使用当前结果集的哪个字段作为参数传递给指定的接口方法-->
+        <association select="com.sugar.dao.DeptMapper.getDeptById" column="emp_dept" property="dept"/>
+    </resultMap>
+
+    <select id="getEmpAndDept" resultMap="empResult">
+		select * from employee where emp_id = #{id}
+	</select>
+```
+
+##### association分步查询、延迟加载
+
+> 级联的属性在使用时再进行查询
+>
+> **lazyLoadingEnabled**:设置属性控制全局是否使用延迟加载，默认为false
+>
+> **aggressiveLazyLoading**：延设置是否**按需加载**，关闭该属性则会按需加载，即使用到某关联属性时，实时执行嵌套查询加载该属性；即若一个对象有多个级联属性时，用到某个属性才会去加载那个属性，而不是加载某个懒属性时加载所有懒属性
+>
+> ```xml
+>     <settings>
+>         <setting name="lazyLoadingEnabled" value="true"/>
+>         <setting name="aggressiveLazyLoading" value="false"/>
+>     </settings>
+> ```
+>
+> 只获取员工的姓名
+>
+> ```java
+> System.out.println(employee.getLastName());
+> ```
+>
+> 输出结果:只发了一次sql
+>
+> ```
+> DEBUG 09-07 19:46:59,501 ==>  Preparing: select * from employee where emp_id = ?   (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:46:59,527 ==> Parameters: 1(Integer)  (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:46:59,577 <==      Total: 1  (JakartaCommonsLoggingImpl.java:54) 
+> zhangsan
+> ```
+>
+> 获取部门信息
+>
+> ```java
+> System.out.println(employee.getDept().getDeptName());
+> ```
+>
+> 输出结果：发了2次sql
+>
+> ```
+> DEBUG 09-07 19:49:19,525 ==>  Preparing: select * from employee where emp_id = ?   (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:49:19,555 ==> Parameters: 1(Integer)  (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:49:19,612 <==      Total: 1  (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:49:19,613 ==>  Preparing: select * from dept where dept_id=?   (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:49:19,613 ==> Parameters: 1(Integer)  (JakartaCommonsLoggingImpl.java:54) 
+> DEBUG 09-07 19:49:19,615 <==      Total: 1  (JakartaCommonsLoggingImpl.java:54) 
+> 开发部
+> ```
+
+##### Collection定义关联集合封装规则
+
+> association主要用来定义一对一的关系，Collection用来定义一对多的关系
+
+sql映射文件
+
+> collection使用ofType指定集合中元素类型
+
+```xml
+    <resultMap id="deptMap" type="com.sugar.bean.Dept">
+        <id column="dept_id" property="deptId"/>
+        <result column="dept_name" property="deptName"/>
+        <collection property="employees" ofType="com.sugar.bean.Employee">
+            <id column="emp_id" property="empId"/>
+            <result column="last_name" property="lastName"/>
+            <result column="gender" property="gender"/>
+            <result column="email" property="email"/>
+        </collection>
+    </resultMap>
+
+    <select id="getDeptAndEmp" resultMap="deptMap">
+        select * from dept d left join employee e on d.dept_id=e.emp_dept
+        where d.dept_id=#{deptId}
+    </select>
+```
+
+javaBean
+
+```java
+public class Dept {
+    private Integer deptId;
+    private String deptName;
+    private List<Employee> employees;
+}
+```
+
+##### Collection分步查询、延迟加载
+
+> 与association使用方式相同
+
+```xml
+    <resultMap id="deptMap" type="com.sugar.bean.Dept">
+        <id column="dept_id" property="deptId"/>
+        <result column="dept_name" property="deptName"/>
+        <collection property="employees" column="dept_id" select="com.sugar.dao.EmployeeMapper.getEmpsByDeptId">
+        </collection>
+    </resultMap>
+    <select id="getDeptById" resultMap="deptMap">
+        select * from dept where dept_id=#{deptId}
+    </select>
+```
+
+##### 分步查询传递多值列&fetchType
+
+> - 分步查询的时候通过column指定，将对应的列的数据传递过去，我们有时需要传递多列数据
+>
+> - 使用{key1=column1,key2=column2…}的形式,然后指定的sql映射中通过#{}取值时指定key为传递过去的column map中的key，与接口的参数名和注解别名无关
+>
+>   ```xml
+>       <resultMap id="deptMap" type="com.sugar.bean.Dept">
+>           <id column="dept_id" property="deptId"/>
+>           <result column="dept_name" property="deptName"/>
+>           <collection property="employees" column="{id=dept_id}" select="com.sugar.dao.EmployeeMapper.getEmpsByDeptId">
+>           </collection>
+>       </resultMap>
+>   ```
+>
+> - association或者collection标签的fetchType=eager/lazy可以覆盖全局的延迟加载策略，指定立即加载（eager）或者延迟加载（lazy）
+
+##### discriminator鉴别器
+
+> 根据某列的值改变封装行为，mybatis根据指定的列的值进行不同的封装，如下，若vehicle_type的值为1，则会封装一个Car类型的汽车，若vehicle_type的值为2，会封装一个Suv类型的汽车，除了可以使用resultType指定封装的类型，也可以使用resultMap指定封装规则
+
+```xml
+    <resultMap id="vehicleResultMap" type="Vehicle">
+        <id column="id" property="id"/>
+        <id column="vin" property="vin"/>
+        <id column="year" property="year"/>
+        <id column="make" property="make"/>
+        <id column="model" property="model"/>
+        <id column="color" property="color"/>
+        <discriminator javaType="int" column="vehicle_type">
+            <case value="1" resultType="Car">
+                <result column="door_count" property="doorCount"/>
+            </case>
+            <case value="2" resultType="Suv">
+                <result column="all_wheel_drive" property="allWheelDriveFlag"/>
+            </case>
+        </discriminator>
+    </resultMap>
+```
+
+## 动态sql
+
+### 简介
+
+> - 动态SQL是MyBatis强大特性之一。极大的简化我们拼装SQL的操作
+> - 动态SQL 元素和使用JSTL 或其他类似基于XML 的文本处理器相似。
+> - MyBatis 采用功能强大的基于OGNL 的表达式来简化操作
+>   - if
+>   - choose (when, otherwise)
+>   - trim (where, set)
+>   - foreach
+
+### if&OGNL
+
+#### OGNL
+
+![1567931162789](images/1567931162789.png)
+
+#### if
+
+> - 特殊字符需要进行转义,使用\&quot;的形式
+> - &&也可以写成and,||可以写成or
+
+![1567931264491](images/1567931264491.png)
+
+### where
+
+> 当使用多个if时，中间有and连接，如何保证第一个条件之前没有and
+>
+> - 传统解决办法，使用一个永真条件放在where之后，如1=1
+> - mybatis解决方案，使用where标签包裹所有的条件，但是where只会去掉第一个and，不会去掉最后一个and，所以在使用if拼接条件时，需要将and写在前面，或者使用trim标签动态截取
+
+### trim
+
+> 自定义字符串截取，可以截取where标签and的拼接问题
+>
+> trim的4个属性：
+>
+> - prefix：给标签体里面的拼接结果添加一个前缀，可以设置为where
+> - prefixOverrides：前缀覆盖，如将第一个and去掉，则将该值指定为and
+> - suffix：添加后缀
+> - suffixOverrides：后缀覆盖
+>
+> ```xml
+> <trim prefix="where" prefixOverrides="and" suffix="" suffixOverrides="and"/>
+> ```
+
+### choose分支选择
+
+![1567933547204](images/1567933547204.png)
+
+### set与if结合实现动态更新
+
+![1567934257106](images/1567934257106.png)
+
+### foreach遍历集合
+
+> - 动态SQL 的另外一个常用的必要操作是需要对一个集合进行遍历，通常是在构建IN 条件语句的时候
+>
+>   ![1567934525600](images/1567934525600.png)
+>
+> - 当迭代列表、集合等可迭代对象或者数组时
+>   –index是当前迭代的次数，item的值是本次迭代获取的元素
+>
+> - 当使用字典（或者Map.Entry对象的集合）时
+>   –index是键，item是值
+>
+> - ![1567934751002](images/1567934751002.png)
+
+### mysql使用foreach批量插入
+
+#### 方式一
+
+> 使用insert into values (),()的写法
+
+![1567935071018](images/1567935071018.png)
+
+#### 方式二
+
+> 开启mysql批量sql执行，使用多个sql,sql之间使用;分割
+
+![1567935201225](images/1567935201225.png)
+
+![1567935250224](images/1567935250224.png)
+
+### oracle使用foreach批量插入
+
+#### 方式一
+
+> oracle不支持insert into values (),()这种写法
+>
+> 解决方案：将多个insert语句放在begin end中，如
+>
+> ```sql
+> begin
+> 	insert into values ();
+> 	insert into values ();
+> end
+> ```
+> ![1567936539606](images/1567936539606.png)
+> **注意end后面有一个分号**
+
+#### 方式二
+
+> 使用中间表，中间表的字段需要起别名和字段对应
+>
+> ![1567936109681](images/1567936109681.png)
+
+![1567936899123](images/1567936899123.png)
+
+### 内置参数parameter和databaseId
+
+> - _parameter：代表整个参数
+>   - 只有单个参数时，_parameter就是这个参数
+>   - 当有多个参数时，参数会被封装成一个map，_parameter就是这个map
+> - _databaseId:若在mybatis配置文件中配置了databaseIdProvider, 则可以使用“_databaseId”变量，这样就可以根据不同的数据库厂商构建特定的语句
+
+![1567937454769](images/1567937454769.png)
+
+![1567937567880](images/1567937567880.png)
+
+### bind绑定
+
+> bind 元素可以从OGNL 表达式中创建一个变量并将其绑定到上下文。比如：
+>
+> ![1567937625744](images/1567937625744.png)
+
+### 抽取可重用sql片段
+
+![1567943397140](images/1567943397140.png)
 
