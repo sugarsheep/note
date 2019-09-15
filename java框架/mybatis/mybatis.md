@@ -1199,3 +1199,6 @@ public class Dept {
 
 ![1567943397140](images/1567943397140.png)
 
+## mybatis缓存
+
+## mybatis整合spring
