@@ -54,6 +54,12 @@
 
 ## 汉化
 
+### 离线安装
+
+> - 可以在github上找到对应版本的汉化插件，将jar包拷贝到sonar对应目录extensions\plugins即可
+
+### 在线安装
+
 > - 打开sonar界面并登录，之后界面上Administration > Marketplace，在搜索框中输入`chinese`，出现一个`Chinese Pack`，点击右侧的`install`按钮
 >
 >   ![1569849197940](images/1569849197940.png)
