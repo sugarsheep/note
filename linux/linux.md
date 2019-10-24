@@ -45,3 +45,35 @@
 ![1563286718646](images/1563286718646.png)
 
 ![1563286744389](images/1563286744389.png)
+
+### linux与windows文件传输
+
+- 使用xshell进行文件传输，
+- linux需要安装软件包lrzsz，命令：yum install lrzsz -y
+- 安装完成后向将文件拖入xshell即可上传文件,sz 文件名即可下载文件
+
+### windows访问linux上部署的tomcat
+
+- linux配置tomcat并启动
+- windows进行访问，若无法访问，先查看windows是否可以ping通linux服务器，若可以ping通，则检查linux的**防火墙**，可以关闭防火墙或开放指定的端口；若不可以ping通，虚拟机修改为使用NAT模式
+
+```shell
+# 查看防火墙状态
+service iptables status
+ 
+# 停止防火墙
+service iptables stop
+ 
+# 启动防火墙
+service iptables start
+ 
+# 重启防火墙
+service iptables restart
+ 
+# 永久关闭防火墙
+chkconfig iptables off
+ 
+# 永久关闭后重启
+chkconfig iptables on
+```
+

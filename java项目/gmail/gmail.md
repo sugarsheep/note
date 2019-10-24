@@ -93,3 +93,36 @@ return umsMemberReceiveAddressMapper.selectByExample(example);
 
 > - Javabean的属性不要使用基本类型，要使用包装类型
 
+## dubbo配置注意事项
+
+- 提供者方需要将@Service修改为dubbo的@Service
+
+- 消费者方将@Autowired修改为使用@Reference引用
+
+- 提供者方传输的javabean需要实现序列化接口
+
+- dubbo的消费者在3秒内会每间隔一秒访问服务端，默认1秒超时，3次访问之后就会抛出超时异常，开发时，可以将超时时间设置长一点
+
+  ```properties
+  #设置服务调用超时时间
+  spring.dubbo.consumer.timeout=600000
+  #设置是否检查服务是否存在
+  spring.dubbo.consumer.check=false
+  ```
+
+- 11
+
+## 启动前端项目
+
+> npm run dev
+
+## 解决跨域
+
+在controller类上添加@CrossOrigin注解
+
+## controller接受json数据
+
+> ```
+> 使用@RequestBody注解标识参数即可
+> ```
+

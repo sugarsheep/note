@@ -91,3 +91,10 @@ default-character-set=utf8
 解决办法：![1562495144937](E:\git\note\数据库\images\1562495144937.png)
 
 ![1562495188665](E:\git\note\数据库\images\1562495188665.png)
+
+## java连接mysql连接串
+
+> jdbc:mysql://localhost:3306/mybatis_test?useSSL=false&serverTimezone=UTC
+>
+> 说明：serverTimezone是mysql8必须设置的
+
