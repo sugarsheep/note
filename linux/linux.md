@@ -77,3 +77,153 @@ chkconfig iptables off
 chkconfig iptables on
 ```
 
+### 时间同步
+
+> - yum -y install ntp :安装同步软件包
+> - ntpdate time1.aliyun.com：执行同步命令
+> - date：查看日期
+
+## 软件安装
+
+### jdk1.8
+
+> - 下载linux版的jdk1.8并上传解压
+>
+> - 配置环境变量,vi /etc/profile，添加如下内容
+>
+>   ```shell
+>   export JAVA_HOME=/opt/software/jdk1.8.0_152
+>   export PATH=$PATH:$JAVA_HOME/bin
+>   export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+>   ```
+>
+> - 使配置生效，执行source /etc/profile
+>
+> - 验证jdk是否配置好，出现如下界面则表示配置完成
+>
+>   ![1574595663988](images/1574595663988.png)
+
+### zookeeper
+
+> - 解压zookeeper压缩包
+>
+> - 修改默认配置文件，zookeeper-3.4.11/conf/zoo_sample.cfg,将其重命名为zoo.cfg，修改dataDir=/tmp/zookeeper，这个配置是zookeeper的数据目录路径，将其修改为zookeeper下的一个目录
+>
+>   ```shell
+>   dataDir=/opt/software/zookeeper-3.4.11/dataDir
+>   ```
+>
+> - 配置开机启动,在`/etc/init.d`目录下创建一个脚本zookeeper，内容如下
+>
+>   ```shell
+>   #!/bin/bash
+>   #chkconfig:2345 20 90
+>   #description:zookeeper
+>   #processname:zookeeper
+>   ZK_PATH=/opt/software/zookeeper-3.4.11
+>   export JAVA_HOME=/opt/software/jdk1.8.0_152
+>   case $1 in
+>            start) sh  $ZK_PATH/bin/zkServer.sh start;;
+>            stop)  sh  $ZK_PATH/bin/zkServer.sh stop;;
+>            status) sh  $ZK_PATH/bin/zkServer.sh status;;
+>            restart) sh $ZK_PATH/bin/zkServer.sh restart;;
+>            *)  echo "require start|stop|status|restart"  ;;
+>   esac
+>   ```
+>
+> - 增加脚本的执行权限
+>
+>   ```shell
+>   chmod +x /etc/init.d/zookeeper
+>   ```
+>
+> - 注册zookeeper服务
+>
+>   ```shell
+>   chkconfig --add zookeeper
+>   
+>   chkconfig --list //查看已经注册的服务列表
+>   ```
+>
+> - 启动zookeeper服务
+>
+>   ```shell
+>   service zookeeper start
+>   ```
+>
+>   ![1574597082298](images/1574597082298.png)
+
+### 配置dubbo监控界面
+
+> - dubbo监控程序是一个war包，因此运行需要一个tomcat
+>
+> ```
+> dubbo-admin-2.6.0.war
+> ```
+>
+> - 解压到指定目录
+>
+> ```shell
+> unzip dubbo-admin-2.6.0.war -d dubbo-admin/
+> ```
+>
+> - 配置tomcat,在apache-tomcat-8.5.24/conf/Catalina/localhost/下新建一个dubbo.xml(另一种方式是在server.xml中配置Context)，文件名称为项目名（**即下面配置中path的值**），文件内容
+>
+> ```xml
+> <Context docBase="/opt/software/dubbo-admin/" path="/dubbo" privileged="true" reloadable="true" caseSensitive="false" debug="0" crossContext="true"/>
+> ```
+>
+> - 配置dubbo-admin开机启动
+>
+> ```shell
+> #!/bin/bash
+> #chkconfig:2345 20 90
+> #description:dubbo-admin
+> #processname:dubbo-admin
+> CATALANA_HOME=/opt/software/apache-tomcat-8.5.24
+> export JAVA_HOME=/opt/software/jdk1.8.0_152
+> case $1 in
+> start)  
+>    echo "Starting Tomcat..."  
+>    $CATALANA_HOME/bin/startup.sh  
+>    ;;  
+>  
+> stop)  
+>    echo "Stopping Tomcat..."  
+>    $CATALANA_HOME/bin/shutdown.sh  
+>    ;;  
+>  
+> restart)  
+>    echo "Stopping Tomcat..."  
+>    $CATALANA_HOME/bin/shutdown.sh  
+>    sleep 2  
+>    echo  
+>    echo "Starting Tomcat..."  
+>    $CATALANA_HOME/bin/startup.sh  
+>    ;;  
+> *)  
+>    echo "Usage: tomcat {start|stop|restart}"  
+>    ;; esac
+> 
+> ```
+>
+> - 增加配置文件可执行权限
+>
+> ```shell
+> chmod +x /etc/init.d/dubbo-admin
+> ```
+>
+> - 添加服务dubbo-admin
+>
+> ```shell
+> chkconfig --add dubbo-admin
+> ```
+>
+> - 启动服务
+>
+> ```shell
+> service dubbo-admin start
+> ```
+> - dubbo-admin默认用户名和密码都是root
+> - 1
+
