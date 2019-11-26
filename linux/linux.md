@@ -225,5 +225,192 @@ chkconfig iptables on
 > service dubbo-admin start
 > ```
 > - dubbo-admin默认用户名和密码都是root
+> - 如果主机无法访问虚拟机的dubbo-admin界面，可以检查防火墙是否关闭
+
+### fastdfs
+
+#### 简介
+
+> - fastdfs是由阿里开源的一个分布式文件系统，由c语言编写
+
+#### 安装顺序
+
+> 1. libfastcommon
+> 2. fdfs_tracker：依赖：Gcc、libevent、perl
+> 3. fdfs_storage
+> 4. FastDFS-nginx-module
+> 5. nginx：依赖pcre-devel、zlib-devel
+
+#### 前期准备
+
+> - 安装gcc，安装后输入gcc即可确认是否安装成功
+>
+>   ```shell
+>   yum install gcc-c++ -y
+>   ```
+>
+> - libevent
+>
+>   ```shell
+>   yum -y install libevent
+>   ```
+>
+> - perl库，是一个正则语法库
+>
+>   ```shell
+>   yum install perl*
+>   ```
+>
+> - pcre-devel、zlib-devel：是nginx的依赖
+>
+>   ```
+>   yum -y install zlib zlib-devel pcre pcre-devel gcc gcc-c++ openssl openssl-devel libevent libevent-devel perl unzip net-tools wget
+>   ```
+
+#### 安装所需要的模块
+
+![1574770853641](images/1574770853641.png)
+
+#### 安装libfastcommon
+
+> 1. 上传压缩包并解压
+>
+> 2. 进入到解压后的文件夹中，进行编译 **./make.sh**
+>
+> 3. 安装 ./make.sh install
+>
+> 4. 注意：libfastcommon安装好后会自动将库文件拷贝至/usr/lib64下，由于FastDFS程序引用usr/lib目录所以需要将/usr/lib64下的库文件拷贝至/usr/lib下。
+>
+>    ```shell
+>    cp /usr/lib64/libfastcommon.so /usr/lib/
+>    ```
+
+#### 安装tracker
+
+> 1. 上传压缩包并解压FastDFS_v5.05.tar.gz
+>
+> 2. 进入到解压后的文件夹中，进行编译 **./make.sh**
+>
+> 3. 安装 ./make.sh install
+>
+> 4. 安装成功之后，将安装目录下的conf下的文件拷贝到/etc/fdfs/下。(可以不进行拷贝，拷贝的原因是方便管理)
+>
+> 5. 修改配置文件，vim /etc/fdfs/tracker.conf，修改其中的数据存储路径，该路径必须存在
+>
+>    ```
+>    #指定软件产生的数据和日志存储路径
+>    base_path=/opt/fdfs/
+>    ```
+>
+>    
+
+#### storage配置
+
+> 1. storage不需要再进行安装了，因为安装tracker时已经安装了
+>
+> 2. 修改配置文件：vim /etc/fdfs/storage.conf
+>
+>    ```shell
+>    #tracker中指定的路径
+>    base_path=/opt/fdfs/
+>    #用于存储上传文件的路径
+>    store_path0=/opt/fdfs/fdfs_storage
+>    #tracker的地址
+>    tracker_server=192.168.19.11:22122
+>    ```
+
+#### 设置服务开机启动
+
+> 进入启动脚本目录，/etc/init.d，fastdfs安装时已经创建了2个服务**fdfs_storaged**和**fdfs_trackerd**
+
+##### tracker
+
+```shell
+#/usr/local/fdfs/目录需要先创建，然后将fastdfs目录下的2个脚本拷贝过去即可
+cp stop.sh /usr/local/fdfs/
+cp restart.sh /usr/local/fdfs/
+```
+
+需要修改以下6处
+
+```shell
+#1
+PRG=/usr/bin/fdfs_trackerd
+#2
+CONF=/etc/fdfs/tracker.conf
+
+#3.将脚本stop.sh拷贝到/usr/local/fdfs/stop.sh
+if [ ! -f /usr/local/fdfs/stop.sh ]; then
+  echo "file /usr/local/fdfs/stop.sh does not exist!"
+  exit 2
+fi
+
+#4.将脚本restart.sh拷贝到/usr/local/fdfs/restart.sh
+if [ ! -f /usr/local/fdfs/restart.sh ]; then
+  echo "file /usr/local/fdfs/restart.sh does not exist!"
+  exit 2
+fi
+
+stop() {
+#5
+        /usr/local/fdfs/stop.sh $CMD
+        RETVAL=$?
+        return $RETVAL
+}
+
+restart() {
+#6
+        /usr/local/fdfs/restart.sh $CMD &
+}
+```
+
+##### storage
+
+> 配置方式同tracker，由于2个脚本restart.sh和stop.sh已经拷贝，所以不需要再次拷贝
+
+##### 将服务添加到linux
+
+```shell
+#进入/etc/init.d
+chkconfig --add fdfs_trackerd
+chkconfig --add fdfs_storaged
+```
+
+#### fastdfs启动
+
+```shell
+service fdfs_trackerd star
+service fdfs_storaged start
+```
+
+![1574780232099](images/1574780232099.png)
+
+#### 上传文件测试
+
+> - FastDFS安装成功可通过/usr/bin/fdfs_test测试上传、下载等操作。
+>
+> - 修改/etc/fdfs/client.conf
+>
+>   ```shell
+>   base_path=/opt/fdfs
+>   tracker_server=192.168.19.11:22122
+>   ```
+>
+> - 先上传一张图片到linux任意目录
+>
+> - 执行如下命令进行上传文件到fastdfs
+>
+>   ```shell
+>   /usr/bin/fdfs_test  /etc/fdfs/client.conf  upload  /opt/software/7bbe8dd0133bef8f03a8857241724fad.jpg
+>   ```
+>
+> - 结果，fastdfs会生成一个url，但是该url目前是无法访问的，因为fastdfs不提供web服务，需要nginx进行转发
+>
+>   ![1574781088285](images/1574781088285.png)
+>
+> - 进入之前配置的storage目录查看上传结果
+>
+>   ![1574781458954](images/1574781458954.png)
+>
 > - 1
 
