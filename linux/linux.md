@@ -391,26 +391,150 @@ service fdfs_storaged start
 >
 > - 修改/etc/fdfs/client.conf
 >
->   ```shell
->   base_path=/opt/fdfs
->   tracker_server=192.168.19.11:22122
->   ```
+> ```shell
+> base_path=/opt/fdfs
+> tracker_server=192.168.19.11:22122
+> ```
 >
 > - 先上传一张图片到linux任意目录
 >
 > - 执行如下命令进行上传文件到fastdfs
 >
->   ```shell
->   /usr/bin/fdfs_test  /etc/fdfs/client.conf  upload  /opt/software/7bbe8dd0133bef8f03a8857241724fad.jpg
->   ```
+> ```shell
+> /usr/bin/fdfs_test  /etc/fdfs/client.conf  upload  /opt/software/7bbe8dd0133bef8f03a8857241724fad.jpg
+> ```
 >
 > - 结果，fastdfs会生成一个url，但是该url目前是无法访问的，因为fastdfs不提供web服务，需要nginx进行转发
 >
->   ![1574781088285](images/1574781088285.png)
+>   ```
+>   http://192.168.19.11/group1/M00/00/00/wKgTC13elTuAG2Z_AAEwPZNcA4U23_big.jpeg
+>   
+>   http://192.168.19.11/group1/M00/00/00/wKgTC13elTuAG2Z_AAEwPZNcA4U23.jpeg
+>   ```
+>
+>   
+>
+> ![1574781088285](images/1574781088285.png)
 >
 > - 进入之前配置的storage目录查看上传结果
 >
->   ![1574781458954](images/1574781458954.png)
+> ![1574781458954](images/1574781458954.png)
 >
 > - 1
+
+### fastdfs整合nginx
+
+#### 安装nginx整合插件fastdfs-nginx-module
+
+> 1. 上传并解压文件fastdfs-nginx-module_v1.16.tar.gz
+>
+> 2. 修改配置fastdfs-nginx-module/src/config（插件自身的配置文件）
+>
+>    ```shell
+>    #fastdfs和fastcommon的路径都需要修改，去掉其中的local
+>    CORE_INCS="$CORE_INCS /usr/include/fastdfs /usr/include/fastcommon/"
+>    ```
+>
+> 3. 将FastDFS-nginx-module/src下的mod_fastdfs.conf（整合配置）拷贝至/etc/fdfs/下
+>
+> 4. 修改拷贝后的mod_fastdfs.conf
+>
+>    ```shell
+>    base_path=/opt/fdfs
+>    tracker_server=192.168.19.11:22122
+>    #设置url是否包含group
+>    url_have_group_name = true
+>    store_path0=/opt/fdfs/fdfs_storage
+>    ```
+
+#### 安装nginx
+
+> 1. mkdir -p /var/temp/nginx/client：创建一个临时目录
+>
+> 2. 进入解压后的nginx目录，执行
+>
+>    > - pid-path：该路径需要修改，当nginx设置为开机启动后，每次linux启动会清空/var/run下的文件，所以需要修改该目录
+>    > - add-module：设置为添加的fastdfs-nginx-module模块的对应目录
+>
+>    ```
+>    ./configure \
+>    --prefix=/usr/local/nginx \
+>    --pid-path=/opt/software/nginx-1.12.2/pid/nginx.pid \
+>    --lock-path=/var/lock/nginx.lock \
+>    --error-log-path=/var/log/nginx/error.log \
+>    --http-log-path=/var/log/nginx/access.log \
+>    --with-http_gzip_static_module \
+>    --http-client-body-temp-path=/var/temp/nginx/client \
+>    --http-proxy-temp-path=/var/temp/nginx/proxy \
+>    --http-fastcgi-temp-path=/var/temp/nginx/fastcgi \
+>    --http-uwsgi-temp-path=/var/temp/nginx/uwsgi \
+>    --http-scgi-temp-path=/var/temp/nginx/scgi \
+>    --add-module=/opt/software/fastdfs-nginx-module/src
+>    
+>    ```
+>
+>    出现如下内容则表示配置成功
+>
+>    ![1574867415762](images/1574867415762.png)
+>
+> 3. 执行**make**命令和**make install**命令
+>
+> 4. 修改nginx配置文件nginx.conf
+>
+>    > - 修改其中的 server_name为本机ip
+>    > - 配置location
+>
+>    ```shell
+>    server {
+>            listen       80;
+>            server_name  192.168.19.11;
+>    
+>            #charset koi8-r;
+>    
+>            #access_log  logs/host.access.log  main;
+>    
+>            location /group1/M00 {
+>                #root   html;
+>                #index  index.html index.htm;
+>                ngx_fastdfs_module;
+>            }
+>    
+>    ```
+>
+> 5. 启动nginx
+>
+>    > /usr/local/nginx/sbin/nginx
+>
+> 6. nginx常用命令
+>
+>    > 1. 重新加载配置文件：./nginx -s reload
+>    > 2. 快速关闭nginx：./nginx -s stop
+>    > 3. 优雅的关机：./nginx -s quit
+>    > 4. 重新打开日志文件：./nginx -s reopen
+>    > 5. 检查配置文件合法性：./nginx -t
+>
+> 7. 配置开机启动
+
+## 防火墙
+
+> - 不同操作系统命令可能不同
+
+### 查看开放的端口
+
+```shell
+firewall-cmd --list-all
+```
+
+### 添加开放的端口
+
+```shell
+#开放80端口
+sudo firewall-cmd --add-port=80/tcp --permanent
+```
+
+### 重新加载防火墙配置
+
+```shell
+firewall-cmd -reload
+```
 

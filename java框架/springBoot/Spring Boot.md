@@ -4162,7 +4162,61 @@ public class CorsConfig {
 }
 ```
 
+## springboot整合fastdfs
 
+### 添加maven依赖
+
+```xml
+<!-- https://mvnrepository.com/artifact/org.csource/fastdfs-client-java -->
+<dependency>
+    <groupId>org.csource</groupId>
+    <artifactId>fastdfs-client-java</artifactId>
+    <version>1.27-RELEASE</version>
+</dependency>
+
+```
+
+### 增加一个tracker.conf配置文件
+
+```properties
+tracker_server=192.168.19.11:22122
+
+# 连接超时时间，针对socket套接字函数connect，默认为30秒
+connect_timeout=30000
+
+# 网络通讯超时时间，默认是60秒
+network_timeout=60000
+```
+
+### 测试代码
+
+```java
+@SpringBootTest
+@RunWith(SpringRunner.class)
+public class GmailManageWebApplicationTest {
+
+    @Test
+    public void test01() throws IOException, MyException {
+        String file = this.getClass().getResource("/tracker.conf").getFile();
+        ClientGlobal.init(file);
+        TrackerClient trackerClient=new TrackerClient();
+        TrackerServer trackerServer=trackerClient.getConnection();
+        StorageClient storageClient=new StorageClient(trackerServer,null);
+        String orginalFilename="C:\\Users\\13784\\Desktop\\images\\2a4f662f4ca3d043d4ee15dba359c239.jpeg";
+        String[] upload_file = storageClient.upload_file(orginalFilename, "jpeg", null);
+
+        StringBuilder url = new StringBuilder("http:192.168.19.11");
+
+        for (String s : upload_file) {
+            url.append("/").append(s);
+            System.out.println("s = " + s);
+        }
+
+        System.out.println(url.toString());
+
+    }
+}
+```
 
 ## 更多SpringBoot整合示例
 
