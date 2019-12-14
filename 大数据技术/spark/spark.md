@@ -21,3 +21,254 @@ spark.catalog.dropTempView("tempViewName")
 spark.catalog.dropGlobalTempView("tempViewName")
 ```
 
+## spark java-api使用
+
+> 注意要使用和安装的scala对应版本兼容的spark
+>
+> ![1576319230850](images/1576319230850.png)
+
+### 创建java maven工程
+
+```xml
+<dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.12</artifactId>
+            <version>2.4.4</version>
+            <!--排除日志依赖，统一使用slf4j+logback-->
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.slf4j/log4j-over-slf4j -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.24</version>
+        </dependency>
+```
+
+### spark报任务没有序列化问题
+
+> spark会把当前作为一个任务，所以该类需要实现java.io.Serializable接口，并且，若程序内部使用了主类的成员变量，则该成员变量也不要是可以序列化的，否则会报错
+
+### rdd api解析
+
+#### join
+
+##### 说明
+
+> - 对2个rdd进行join操作，将2个rdd中key相同的数据聚合到一起，形成（k,<v1,v2>）的二元组
+>
+> - 将一组数据转化为RDD后，分别创造出两个PairRDD，然后再对两个PairRDD进行归约（即合并相同Key对应的Value）
+>
+> - 若rdd1有一条数据（1,1），rdd2有2条数据（1，A）,(1,B),则会产生<1,<1,A>>,<1,<1,B>>，相当于做**笛卡尔积**，产生1*2=2条结果
+>
+> - 如图所示
+>
+>   ![1576328659231](images/1576328659231.png)
+
+##### 代码
+
+```java
+@Test
+    public void testJoin() {
+        SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> data = Arrays.asList(1, 2, 3, 4, 5);
+        JavaRDD<Integer> rdd = sc.parallelize(data);
+
+        //FirstRDD
+        JavaPairRDD<Integer, Integer> firstRDD = rdd.mapToPair(new PairFunction<Integer, Integer, Integer>() {
+            @Override
+            public Tuple2<Integer, Integer> call(Integer num) throws Exception {
+                return new Tuple2<>(num, num * num);
+            }
+        });
+
+        //SecondRDD
+        JavaPairRDD<Integer, String> secondRDD = rdd.mapToPair(new PairFunction<Integer, Integer, String>() {
+            @Override
+            public Tuple2<Integer, String> call(Integer num) throws Exception {
+                return new Tuple2<>(num, String.valueOf((char) (64 + num * num)));
+            }
+        });
+
+        JavaPairRDD<Integer, Tuple2<Integer, String>> joinRDD = firstRDD.join(secondRDD);
+
+        JavaRDD<String> res = joinRDD.map(new Function<Tuple2<Integer, Tuple2<Integer, String>>, String>() {
+            @Override
+            public String call(Tuple2<Integer, Tuple2<Integer, String>> integerTuple2Tuple2) throws Exception {
+                int key = integerTuple2Tuple2._1();
+                int value1 = integerTuple2Tuple2._2()._1();
+                String value2 = integerTuple2Tuple2._2()._2();
+                return "<" + key + ",<" + value1 + "," + value2 + ">>";
+            }
+        });
+
+        List<String> resList = res.collect();
+        for (String str : resList) {
+            System.out.println(str);
+        }
+
+        sc.close();
+    }
+```
+
+#### cogroup
+
+##### 说明
+
+> - 有两个元组Tuple的集合A与B,先对A组集合中key相同的value进行聚合,然后对B组集合中key相同的value进行聚合,之后对A组与B组进行"join"操作
+> - 即2个rdd（元素是元组）先各自内部根据key进行聚合，然后将聚合的结果进行join操作
+
+##### 代码
+
+```java
+@Test
+    public void testCogroup(){
+        SparkConf conf=new SparkConf().setAppName("spark WordCount!").setMaster("local");
+        JavaSparkContext sContext=new JavaSparkContext(conf);
+        List<Tuple2<Integer,String>> namesList=Arrays.asList(
+                new Tuple2<Integer, String>(1,"Spark"),
+                new Tuple2<Integer, String>(3,"Tachyon"),
+                new Tuple2<Integer, String>(4,"Sqoop"),
+                new Tuple2<Integer, String>(2,"Hadoop"),
+                new Tuple2<Integer, String>(2,"Hadoop2")
+        );
+
+        List<Tuple2<Integer,Integer>> scoresList=Arrays.asList(
+                new Tuple2<Integer, Integer>(1,100),
+                new Tuple2<Integer, Integer>(3,70),
+                new Tuple2<Integer, Integer>(3,77),
+                new Tuple2<Integer, Integer>(2,90),
+                new Tuple2<Integer, Integer>(2,80)
+        );
+        JavaPairRDD<Integer, String> names=sContext.parallelizePairs(namesList);
+        JavaPairRDD<Integer, Integer> scores=sContext.parallelizePairs(scoresList);
+        /**
+         * <Integer> JavaPairRDD<Integer, Tuple2<Iterable<String>, Iterable<Integer>>>
+         * org.apache.spark.api.java.JavaPairRDD.cogroup(JavaPairRDD<Integer, Integer> other)
+         */
+        JavaPairRDD<Integer, Tuple2<Iterable<String>, Iterable<Integer>>> nameScores=names.cogroup(scores);
+
+        nameScores.foreach(new VoidFunction<Tuple2<Integer, Tuple2<Iterable<String>, Iterable<Integer>>>>() {
+            private static final long serialVersionUID = 1L;
+            int i=1;
+            @Override
+            public void call(
+                    Tuple2<Integer, Tuple2<Iterable<String>, Iterable<Integer>>> t)
+                    throws Exception {
+                String string="ID:"+t._1+" , "+"Name:"+t._2._1+" , "+"Score:"+t._2._2;
+                string+="     count:"+i;
+                System.out.println(string);
+                i++;
+            }
+        });
+
+        sContext.close();
+    }
+```
+
+#### groupByKey
+
+##### 说明
+
+> - 即根据数据的key进行聚合，所以需要rdd的元素是元组
+>
+> - 在spark中，我们知道一切的操作都是基于RDD的。在使用中，RDD有一种非常特殊也是非常实用的format——pair RDD，即RDD的每一行是（key, value）的格式。这种格式很像Python的字典类型，便于针对key进行一些处理
+>
+> - groupByKey也是对每个key进行操作，但只生成一个sequence。需要特别注意“Note”中的话，它告诉我们：如果需要对sequence进行aggregation操作（注意，groupByKey本身不能自定义操作函数），那么，选择reduceByKey/aggregateByKey更好。这是因为groupByKey不能自定义函数，我们需要先用groupByKey生成RDD，然后才能对此RDD通过map进行自定义函数操作
+>
+> - 当采用groupByKey时，由于它不接收函数，spark只能先将所有的键值对(key-value pair)都移动，这样的后果是集群节点之间的开销很大，导致传输延时。整个过程如下
+>
+>   ![1576332782687](images/1576332782687.png)
+>
+> - 如果仅仅是group处理，那么以下函数应该优先于 groupByKey ：
+>
+>   > （1）、combineByKey 组合数据，但是组合之后的数据类型与输入时值的类型不一样。
+>   > （2）、foldByKey合并每一个 key 的所有值，在级联函数和“零值”中使用。
+>
+> - 1
+
+##### 代码
+
+```java
+SparkConf sparkConf = new SparkConf();  
+        sparkConf.setAppName("Spark_GroupByKey_Sample");  
+        sparkConf.setMaster("local");  
+  
+        JavaSparkContext context = new JavaSparkContext(sparkConf);  
+  
+        List<Integer> data = Arrays.asList(1,1,2,2,1);  
+        JavaRDD<Integer> distData= context.parallelize(data);  
+  
+        JavaPairRDD<Integer, Integer> firstRDD = distData.mapToPair(new PairFunction<Integer, Integer, Integer>() {  
+            @Override  
+            public Tuple2<Integer, Integer> call(Integer integer) throws Exception {  
+                return new Tuple2(integer, integer*integer);  
+            }  
+        });  
+  
+		//得到<1,[1,1,1]>,<2,[4,4,]>
+        JavaPairRDD<Integer, Iterable<Integer>> secondRDD = firstRDD.groupByKey();  
+  
+		//得到<1,1 1 1>,<2,4 4>
+        List<Tuple2<Integer, String>> reslist = secondRDD.map(new Function<Tuple2<Integer, Iterable<Integer>>, Tuple2<Integer, String>>() {  
+            @Override  
+            public Tuple2<Integer, String> call(Tuple2<Integer, Iterable<Integer>> integerIterableTuple2) throws Exception {  
+                int key = integerIterableTuple2._1();  
+                StringBuffer sb = new StringBuffer();  
+                Iterable<Integer> iter = integerIterableTuple2._2();  
+                for (Integer integer : iter) {  
+                        sb.append(integer).append(" ");  
+                }  
+                return new Tuple2(key, sb.toString().trim());  
+            }  
+        }).collect();  
+  
+  
+        for(Tuple2<Integer, String> str : reslist) {  
+            System.out.println(str._1() + "\t" + str._2() );  
+        }  
+        context.stop(); 
+```
+
+#### map
+
+> 将一个元素映射成另一个元素，1对1映射
+
+#### flatmap
+
+> 1对多映射
+
+#### mapToPair
+
+> 将映射映射成一个元组
+
+#### mapPartitions
+
+##### 说明
+
+> - mapPartitions函数会对每个分区依次调用分区函数处理，然后将处理的结果(若干个Iterator)生成新的RDDs。mapPartitions与map类似，但是如果在映射的过程中需要频繁创建额外的对象，使用mapPartitions要比map高效的过。比如，将RDD中的所有数据通过JDBC连接写入数据库，如果使用map函数，可能要为每一个元素都创建一个connection，这样开销很大，如果使用mapPartitions，那么只需要针对每一个分区建立一个connection
+> - **两者的主要区别是调用的粒度不一样：map的输入变换函数是应用于RDD中每个元素，而mapPartitions的输入函数是应用于每个分区**
+> - 假设一个rdd有10个元素，分成3个分区。如果使用map方法，map中的输入函数会被调用10次；而使用mapPartitions方法的话，其输入函数会只会被调用3次，每个分区调用1次
+
+##### 代码
+
