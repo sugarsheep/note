@@ -272,3 +272,113 @@ SparkConf sparkConf = new SparkConf();
 
 ##### 代码
 
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> data = Arrays.asList(1, 2, 4, 3, 5, 6, 7);
+        //RDD有两个分区
+        JavaRDD<Integer> javaRDD = sc.parallelize(data, 2);
+        //计算每个分区的合计
+        JavaRDD<Integer> mapPartitionsRDD = javaRDD.mapPartitions(new FlatMapFunction<Iterator<Integer>, Integer>() {
+            @Override
+            public Iterator<Integer> call(Iterator<Integer> integerIterator) throws Exception {
+                int isum = 0;
+                while (integerIterator.hasNext())
+                    isum += integerIterator.next();
+                LinkedList<Integer> linkedList = new LinkedList<Integer>();
+                linkedList.add(isum);
+                return linkedList.iterator();
+            }
+        });
+
+        System.out.println("mapPartitionsRDD~~~~~~~~~~~~~~~~~~~~~~" + mapPartitionsRDD.collect());
+        sc.close();
+```
+
+#### mapPartitionsWithIndex
+
+##### 说明
+
+> - mapPartitionsWithIndex与mapPartitions基本相同，只是在处理函数的参数是一个**二元元组**，元组的第一个元素是当前处理的**分区的index**，元组的第二个元素是当前处理的分区元素组成的Iterator
+> - 分区号从0开始
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(1, 2, 4, 3, 5, 6, 7);
+//RDD有两个分区
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data,2);
+//分区index、元素值、元素编号输出
+JavaRDD<String> mapPartitionsWithIndexRDD = javaRDD.mapPartitionsWithIndex(new Function2<Integer, Iterator<Integer>, Iterator<String>>() {
+ @Override 
+public Iterator<String> call(Integer v1, Iterator<Integer> v2) throws Exception {        
+  LinkedList<String> linkedList = new LinkedList<String>();        
+  int i = 0;        
+  while (v2.hasNext())            
+   linkedList.add(Integer.toString(v1) + "|" + v2.next().toString() + Integer.toString(i++));        
+  return linkedList.iterator();    
+  }
+},false);
+
+System.out.println("mapPartitionsWithIndexRDD~~~~~~~~~~~~~~~~~~~~~~" + mapPartitionsWithIndexRDD.collect());
+```
+
+#### sortBy
+
+##### 说明
+
+> - sortBy根据给定的f函数将RDD中的元素进行排序
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data, 3);
+final Random random = new Random(100);
+//对RDD进行转换，每个元素有两部分组成
+JavaRDD<String> javaRDD1 = javaRDD.map(new Function<Integer, String>() {    
+  @Override    
+  public String call(Integer v1) throws Exception {        
+    return v1.toString() + "_" + random.nextInt(100);    
+  }
+});
+System.out.println(javaRDD1.collect());
+//按RDD中每个元素的第二部分进行排序
+JavaRDD<String> resultRDD = javaRDD1.sortBy(new Function<String, Object>() {    
+  @Override    
+  public Object call(String v1) throws Exception {        
+    return v1.split("_")[1];    
+  }
+},false,3);
+System.out.println("result--------------" + resultRDD.collect());
+```
+
+#### takeOrdered
+
+##### 说明
+
+> - takeOrdered函数用于从RDD中，按照默认（升序）或指定排序规则，返回前num个元素。
+
+##### 代码
+
+```java
+    public static class TakeOrderedComparator implements Serializable, Comparator<Integer> {
+        @Override
+        public int compare(Integer o1, Integer o2) {
+            return -o1.compareTo(o2);
+        }
+    }
+
+    @Test
+    public void testTakeOrdered() {
+        SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> data = Arrays.asList(5, 1, 0, 4, 4, 2, 2);
+        JavaRDD<Integer> javaRDD = sc.parallelize(data, 3);
+        System.out.println("takeOrdered-----1-------------" + javaRDD.takeOrdered(2));
+        List<Integer> list = javaRDD.takeOrdered(2, new TakeOrderedComparator());
+        System.out.println("takeOrdered----2--------------" + list);
+        sc.close();
+    }
+```
+
