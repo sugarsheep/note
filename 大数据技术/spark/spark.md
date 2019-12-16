@@ -382,3 +382,59 @@ System.out.println("result--------------" + resultRDD.collect());
     }
 ```
 
+#### takeSample
+
+##### 说明
+
+> - takeSample函数返回一个数组，在数据集中随机采样 num 个元素组成
+> - takeSample函数类似于[sample](https://www.jianshu.com/p/abe1755220b2)函数，该函数接受三个参数，第一个参数withReplacement ，表示采样是否放回，true表示有放回的采样，false表示无放回采样；第二个参数num，表示返回的采样数据的个数，这个也是takeSample函数和sample函数的区别；第三个参数seed，表示用于指定的随机数生成器种子。
+> - 另外，takeSample函数先是计算fraction，也就是采样比例，然后调用sample函数进行采样，并对采样后的数据进行collect()，最后调用take函数返回num个元素。注意，如果采样个数大于RDD的元素个数，且选择的无放回采样，则返回原始rdd的数据。
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(5, 1, 0, 4, 4, 2, 2);
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data, 3);
+System.out.println("takeSample-----1-------------" + javaRDD.takeSample(true,2));
+System.out.println("takeSample-----2-------------" + javaRDD.takeSample(true,2,100));
+//返回20个元素
+System.out.println("takeSample-----3-------------" + javaRDD.takeSample(true,20,100));
+//无放回采样，采样个数大于数据集个数，返回7个元素
+System.out.println("takeSample-----4-------------" + javaRDD.takeSample(false,20,100));
+```
+
+#### distinct
+
+##### 说明
+
+> - 对rdd元素进行去重
+> - 原理：distinct() 功能是 deduplicate RDD 中的所有的重复数据。由于重复数据可能分散在不同的 partition 里面，因此需要 shuffle 来进行 aggregate 后再去重。然而，shuffle 要求数据类型是 <K, V> 。如果原始数据只有 Key（比如例子中 record 只有一个整数），那么需要补充成 <K, null> 。这个补充过程由 map() 操作完成，生成 MappedRDD。然后调用上面的 reduceByKey() 来进行 shuffle，在 map 端进行 combine，然后 reduce 进一步去重，生成 MapPartitionsRDD。最后，将 <K, null> 还原成 K，仍然由 map() 完成，生成 MappedRDD
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(1, 2, 4, 3, 5, 6, 7, 1, 2);
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data);
+
+JavaRDD<Integer> distinctRDD1 = javaRDD.distinct();
+System.out.println(distinctRDD1.collect());
+JavaRDD<Integer> distinctRDD2 = javaRDD.distinct(2);
+System.out.println(distinctRDD2.collect());
+```
+
+#### cartesian
+
+##### 说明
+
+> - **Cartesian 对两个 RDD 做笛卡尔集，生成的 CartesianRDD 中 partition 个数 = partitionNum(RDD a) * partitionNum(RDD b)**。
+> - 从getDependencies分析可知，这里的依赖关系与前面的不太一样，CartesianRDD中每个partition依赖两个parent RDD，而且其中每个 partition 完全依赖(NarrowDependency) RDD a 中一个 partition，同时又完全依赖(NarrowDependency) RDD b 中另一个 partition。具体如下CartesianRDD 中的 partiton i 依赖于 (RDD a).List(i / numPartitionsInRDDb) 和 (RDD b).List(i % numPartitionsInRDDb)
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(1, 2, 4, 3, 5, 6, 7);
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data);
+
+JavaPairRDD<Integer,Integer> cartesianRDD = javaRDD.cartesian(javaRDD); System.out.println(cartesianRDD.collect());
+```
+
