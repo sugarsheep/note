@@ -438,3 +438,277 @@ JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data);
 JavaPairRDD<Integer,Integer> cartesianRDD = javaRDD.cartesian(javaRDD); System.out.println(cartesianRDD.collect());
 ```
 
+#### fold
+
+##### 说明
+
+> - 根据设置的初始值和函数对rdd进行聚合，flod()函数相比reduce()加了一个初始值参数,reduce会以第一个元素作为初始值
+> - fold是aggregate的简化，将aggregate中的seqOp和combOp使用同一个函数op。
+>   从源码中可以看出，先是将zeroValue赋值给jobResult，然后针对每个分区利用op函数与zeroValue进行计算，再利用op函数将taskResult和jobResult合并计算，同时更新jobResult，最后，将jobResult的结果返回
+
+##### 代码
+
+```java
+        SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<String> data = Arrays.asList("5", "1", "1", "3", "6", "2", "2");
+        JavaRDD<String> javaRDD = sc.parallelize(data, 5);
+        String foldRDD = javaRDD.fold("0", new Function2<String, String, String>() {
+            @Override
+            public String call(String v1, String v2) throws Exception {
+                System.out.println(String.format("v1:%s,v2:%s", v1, v2));
+                return v1 + " - " + v2;
+            }
+        });
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + foldRDD);
+        sc.close()
+```
+
+输出结果
+
+```
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~0 - 0 - 5 - 0 - 1 - 0 - 1 - 3 - 0 - 6 - 0 - 2 - 2
+```
+
+结果分析
+
+> - 由于在初始化rdd时设置分片为5，则初始值会在每个分片被使用，（【5】，【1】，【1,3】，【6】，【2,2】）
+>
+> - 首先，“0”作为初始值作为每个分区的初始值，则得到5个分区的结果为（【0 - 5】，【0 - 1】，【0 - 1 - 3】，【0 - 6】，【0 - 2 - 2】）
+> - 最后，将各个分区的结果再和初始值“0”进行聚合，得到【0 - 0 - 5 - 0 - 1 - 0 - 1 - 3 - 0 - 6 - 0 - 2 - 2】
+> - 所以以上过程seqOp5次，combOp1次
+> - 若只有一个分片，初始值也会使用2次，seqOp1次，combOp1次，结果【0 - 0 - 5 - 1 - 1 - 3 - 6 - 2 - 2】
+
+#### countByKey
+
+##### 说明
+
+> - 即根据key进行聚合统计相同元素出现次数
+> - rdd元素需要时元组才能使用，所以需要先**mapToPair**进行转换
+> - 如果数据量比较大，可能出现**OOM**
+> - 从源码中可以看出，先是进行map操作转化为(key,1)键值对，再进行reduce聚合操作，最后利用collect函数将数据加载到driver，并转化为map类型。注意，从上述分析可以看出，countByKey操作将数据全部加载到driver端的内存，如果数据量比较大，可能出现**OOM**。因此，如果key数量比较多，建议进行`rdd.mapValues(_ => 1L).reduceByKey(_ + _)`，返回`RDD[T, Long]`。
+
+##### 代码
+
+```java
+        SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<String> data = Arrays.asList("5", "1", "1", "3", "6", "2", "2");
+        JavaRDD<String> javaRDD = sc.parallelize(data,5);
+        JavaPairRDD<String,String> javaPairRDD = javaRDD.mapToPair(new PairFunction<String, String, String>() {
+            @Override
+            public Tuple2<String, String> call(String s) throws Exception {
+                return new Tuple2<String, String>(s,s);
+            }
+        });
+        System.out.println(javaPairRDD.countByKey());
+
+        sc.close();
+```
+
+#### reduce
+
+##### 说明
+
+> - 根据映射函数f，对RDD中的元素进行二元计算（满足交换律和结合律），返回计算结果。
+> - 从源码中可以看出，reduce函数相当于对RDD中的元素进行**reduceLeft**函数操作，reduceLeft函数是从列表的左边往右边应用reduce函数；之后，**在driver端对结果进行合并处理**，因此，如果分区数量过多或者自定义函数过于复杂，对driver端的负载比较重。
+
+##### 代码
+
+```java
+        SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> list = Arrays.asList(1, 2, 3, 4, 5);
+        JavaRDD<Integer> rdd = sc.parallelize(list);
+        Integer reduce = rdd.reduce(new Function2<Integer, Integer, Integer>() {
+            @Override
+            public Integer call(Integer a, Integer b) throws Exception {
+                System.out.println(String.format("a:%s,b:%s", a, b));
+                return a + b;
+            }
+        });
+        System.out.println(reduce);
+        sc.close();
+```
+
+#### aggregate
+
+##### 说明
+
+> - aggregate函数将每个分区里面的元素进行聚合，然后用combine函数将每个分区的结果和初始值(zeroValue)进行combine操作。
+> - 这个函数最终返回U的类型不需要和RDD的T中元素类型一致。 这样，我们需要一个函数将T中元素合并到U中，另一个函数将两个U进行合并。
+> - 其中，参数1是初值元素；参数2是seq函数是与初值进行比较；参数3是comb函数是进行合并 。 
+>   注意：如果没有指定分区，aggregate是计算每个分区的，空值则用初始值替换。
+> - 以求rdd平均数为例，要算平均值，我就有两个值是要求的，一个是rdd的各元素的累加和，另一个是元素计数，我初始化为(0, 0)，每个分区返回这样一个2元组，然后comb函数对其进行合并求平均数。
+
+##### 代码
+
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+        //分成3个分片处理
+        JavaRDD<Integer> rdd = sc.parallelize(data, 3);
+        //初始值设置为<0,0>，第一个为分区和，第二个为分区元素个数
+        Tuple2<Integer, Integer> initValue = new Tuple2<>(0, 0);
+        Tuple2<Integer, Integer> result = rdd.aggregate(initValue,
+                //seqOp函数应用到每个分区，初始值为<0,0>
+                new Function2<Tuple2<Integer, Integer>, Integer, Tuple2<Integer, Integer>>() {
+                    @Override
+                    public Tuple2<Integer, Integer> call(Tuple2<Integer, Integer> tuple2, Integer a) throws Exception {
+                        //a为分区rdd元素，将其与tuple2的第一个值进行求和累加，第二个值进行+1计数
+                        return new Tuple2<>(tuple2._1 + a, tuple2._2 + 1);
+                    }
+                },
+                //comb函数应用于每个分区的结果rdd，仍然会与初始值聚合一次
+                new Function2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
+                    @Override
+                    public Tuple2<Integer, Integer> call(Tuple2<Integer, Integer> tuple2a, Tuple2<Integer, Integer> tuple2b) throws Exception {
+                        return new Tuple2<>(tuple2a._1 + tuple2b._1, tuple2a._2 + tuple2b._2);
+                    }
+                });
+
+        System.out.println(result);
+        //计算平均值
+        System.out.println(result._1 / result._2);
+
+        sc.close();
+```
+
+#### aggregateByKey
+
+##### 说明
+
+> - **aggregateByKey产生的rdd分区数默认和来源rdd分区数相同，也可以设置分区数或自定义分区函数**
+> - **若来源rdd只有一个分区，则comb函数不会执行，至少要2个才可以，因为该函数用来聚合各个分区的数据，一个分区不用进行聚合**
+> - 分区参数并不影响计算过程，只影响结果集产生的分区数
+> - aggregateByKey函数对PairRDD中相同Key的值进行聚合操作，在聚合过程中同样使用了一个中立的初始值。
+> - 和aggregate函数类似，aggregateByKey返回值的类型不需要和RDD中value的类型一致。因为aggregateByKey是对相同Key中的值进行聚合操作，所以aggregateByKey函数最终返回的类型还是Pair RDD，
+> - 对应的结果是Key和聚合好的值；而aggregate函数直接是返回非RDD的结果，这点需要注意。在实现过程中，定义了三个aggregateByKey函数原型，
+> - 但最终调用的aggregateByKey函数都一致。其中，参数zeroValue代表做比较的初始值；参数partitioner代表分区函数数，也可指定分区数；参数seq代表与初始值比较的函数；参数comb是进行合并的方法
+
+##### 代码
+
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        //将这个测试程序拿文字做一下描述就是：在data数据集中，按key将value进行分组合并，
+        //合并时在seq函数与指定的初始值进行比较，保留大的值；然后在comb中来处理合并的方式。
+        List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+        int numPartitions = 5;
+        JavaRDD<Integer> javaRDD = sc.parallelize(data,3);
+        final Random random = new Random(100);
+        JavaPairRDD<Integer, Integer> javaPairRDD = javaRDD.mapToPair(new PairFunction<Integer, Integer, Integer>() {
+            @Override
+            public Tuple2<Integer, Integer> call(Integer integer) throws Exception {
+                return new Tuple2<Integer, Integer>(integer, random.nextInt(10));
+            }
+        });
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + javaPairRDD.collect());
+
+        JavaPairRDD<Integer, Integer> aggregateByKeyRDD = javaPairRDD.aggregateByKey(3, new Function2<Integer, Integer, Integer>() {
+            int i = 0;
+            @Override
+            public Integer call(Integer v1, Integer v2) throws Exception {
+                System.out.println("seq~~~~~~~~~~~i~~~~~~~~~~~~~~~"+i++);
+                System.out.println("seq~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + v1 + "," + v2);
+                return Math.max(v1, v2);
+            }
+        }, new Function2<Integer, Integer, Integer>() {
+            int i = 0;
+
+            @Override
+            public Integer call(Integer v1, Integer v2) throws Exception {
+                System.out.println("comb~~~~~~~~~i~~~~~~~~~~~~~~~~~~~" + i++);
+                System.out.println("comb~~~~~~~~~v1~~~~~~~~~~~~~~~~~~~" + v1);
+                System.out.println("comb~~~~~~~~~v2~~~~~~~~~~~~~~~~~~~" + v2);
+                return v1 + v2;
+            }
+        });
+        System.out.println("aggregateByKeyRDD.partitions().size()~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + aggregateByKeyRDD.partitions().size());
+        System.out.println("aggregateByKeyRDD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + aggregateByKeyRDD.collect());
+        sc.close();
+```
+
+**说明**
+
+> - 若mapToPair产生的结果为[(5,5), (1,0), (1,5), (4,0), (4,5), (2,0), (2,4)]，根据设置的分片数3分成3份，【(5,5), (1,0)】，【 (1,5), (4,0)】，【(4,5), (2,0), (2,4)】
+> - 根据seqOp函数，每个分区取最大值，则分区1结果为【(5,5,),(1,3)】(备注：aggregateByKey会在分区内根据key先聚合，相同key的value作为参数值会合并最终产生一个值)；分区2结果【(1,5), (4,3)】；分区3结果【(4,5),(2,4)】(备注：分区3内key=2的有2个，第一次调用call(3,0),返回3；第二次调用call(3,4),返回4)
+> - seqOp函数处理完成之后，将各个分区的数据按照key再进行聚合，得到数据集【(5,5),(1,（3,5）)， (4,（3,5）),(2,4)】，聚合后只有一个值的数据不会调用comb函数，所以在本代码中comb函数会调用2次，得到结果【(1,8),(4,8)】
+> - 最终结果为【(5,5),(1,8),(4,8),(2,4)】
+
+**总结**
+
+> - seqOp函数会针对每个分区内对key进行聚合后的结果进行聚合，相同key的数据聚合成1个
+> - comb函数会对各个分区聚合后的数据根据key再次进行聚合后的数据进行聚合，并且只对一个key对应多个value的数据才会被调用
+
+#### foreach
+
+> - foreach用于遍历RDD,将函数f应用于每一个元素
+
+#### foreachPartition
+
+##### 说明
+
+> - foreachPartition和foreach类似，只不过是对每一个分区使用f。
+
+##### 代码
+
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+        JavaRDD<Integer> javaRDD = sc.parallelize(data,3);
+
+//获得分区ID
+        JavaRDD<String> partitionRDD = javaRDD.mapPartitionsWithIndex(new Function2<Integer, Iterator<Integer>, Iterator<String>>() {
+            @Override
+            public Iterator<String> call(Integer v1, Iterator<Integer> v2) throws Exception {
+                LinkedList<String> linkedList = new LinkedList<String>();
+                while(v2.hasNext()){
+                    linkedList.add(v1 + "=" + v2.next());
+                }
+                return linkedList.iterator();
+            }
+        },false);
+        System.out.println(partitionRDD.collect());
+        javaRDD.foreachPartition(new VoidFunction<Iterator<Integer>>() {
+            @Override
+            public void call(Iterator<Integer> integerIterator) throws Exception {
+                System.out.println("___________begin_______________");
+                while(integerIterator.hasNext())
+                    System.out.print(integerIterator.next() + "      ");
+                System.out.println("\n___________end_________________");
+            }
+        });
+        sc.close();
+```
+
+#### lookup
+
+##### 说明
+
+> - lookup用于(K,V)类型的RDD,指定K值，返回RDD中该K对应的所有V值。
+> - 从源码中可以看出，如果partitioner不为空（即某些可以设置分区器的算子产生的rdd调用lookUp时），计算key得到对应的partition，在从该partition中获得key对应的所有value；如果partitioner为空，则通过filter过滤掉其他不等于key的值，然后将其value输出。
+
+##### 代码
+
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+JavaSparkContext sc = new JavaSparkContext(conf);
+List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+JavaRDD<Integer> javaRDD = sc.parallelize(data, 3);
+JavaPairRDD<Integer, Integer> javaPairRDD = javaRDD.mapToPair(new PairFunction<Integer, Integer, Integer>() {
+    int i = 0;
+
+    @Override
+    public Tuple2<Integer, Integer> call(Integer integer) throws Exception {
+        i++;
+        return new Tuple2<Integer, Integer>(integer, i + integer);
+    }
+});
+System.out.println(javaPairRDD.collect());
+System.out.println("lookup------------" + javaPairRDD.lookup(4));
+sc.close();
+```
+
