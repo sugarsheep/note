@@ -64,9 +64,18 @@ spark.catalog.dropGlobalTempView("tempViewName")
         </dependency>
 ```
 
-### spark报任务没有序列化问题
+### 常见问题
+
+
+
+#### spark报任务没有序列化问题
 
 > spark会把当前作为一个任务，所以该类需要实现java.io.Serializable接口，并且，若程序内部使用了主类的成员变量，则该成员变量也不要是可以序列化的，否则会报错
+
+#### 找不到winutils.exe
+
+> - 下载winutils.exe，并放在hadoop的bin目录下即可，需要确保环境变量配置正确（HADOOP_HOME、PATH）
+> - 然后重启电脑即可
 
 ### rdd api解析
 
@@ -710,5 +719,38 @@ JavaPairRDD<Integer, Integer> javaPairRDD = javaRDD.mapToPair(new PairFunction<I
 System.out.println(javaPairRDD.collect());
 System.out.println("lookup------------" + javaPairRDD.lookup(4));
 sc.close();
+```
+
+#### saveAsTextFile
+
+##### 说明
+
+> - saveAsTextFile用于将RDD以文本文件的格式存储到文件系统（如hadoop）中
+> - 从源码中可以看到，saveAsTextFile函数是依赖于saveAsHadoopFile函数，由于saveAsHadoopFile函数接受PairRDD，所以在saveAsTextFile函数中利用rddToPairRDDFunctions函数转化为(NullWritable,Text)类型的RDD，然后通过saveAsHadoopFile函数实现相应的写操作
+
+##### 代码
+
+```java
+SparkConf conf = new SparkConf().setAppName("SparkRDD").setMaster("local");
+JavaSparkContext sc = new JavaSparkContext(conf);
+List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+JavaRDD<Integer> rdd = sc.parallelize(data,3);
+rdd.saveAsTextFile("C:\\Users\\13784\\Desktop\\b");
+sc.close();
+```
+
+#### saveAsObjectFile
+
+##### 说明
+
+> - saveAsObjectFile用于将RDD中的元素序列化成对象，存储到文件中
+> - 从源码中可以看出，saveAsObjectFile函数是依赖于saveAsSequenceFile函数实现的，将RDD转化为类型为序列化对象进行存储
+
+##### 代码
+
+```java
+List<Integer> data = Arrays.asList(5, 1, 1, 4, 4, 2, 2);
+JavaRDD<Integer> javaRDD = javaSparkContext.parallelize(data,5);
+javaRDD.saveAsObjectFile("/user/tmp");
 ```
 
