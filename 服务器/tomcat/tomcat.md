@@ -34,3 +34,12 @@
 > privileged="true" reloadable="true" caseSensitive="false" debug="0" crossContext="true"> 
 > ```
 
+## tomcat9在idea控制台打印乱码
+
+- 设置-Dfile.encoding=UFT-8是没有用的，需要修改tomcat的日志配置文件logging.properties
+
+  ```xml
+  java.util.logging.ConsoleHandler.encoding = GBK
+  ```
+
+- 并且不能在任何地方设置-Dfile.encoding=UFT-8

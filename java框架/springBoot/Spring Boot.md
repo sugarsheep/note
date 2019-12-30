@@ -4176,7 +4176,7 @@ public class CorsConfig {
 
 ```
 
-### 增加一个tracker.conf配置文件
+### 配置文件
 
 ```properties
 tracker_server=192.168.19.11:22122
@@ -4184,7 +4184,8 @@ tracker_server=192.168.19.11:22122
 # 连接超时时间，针对socket套接字函数connect，默认为30秒
 connect_timeout=30000
 
-# 网络通讯超时时间，默认是60秒
+# 网络通讯超时时间，默认是60
+q，秒
 network_timeout=60000
 ```
 
