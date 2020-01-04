@@ -942,3 +942,70 @@ System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" + treeReduceRDD);
 >   ```
 >
 > - 
+
+## SparkSession、SparkContext、JavaSparkContext
+
+> - SparkSession是spark2.0新加入的统一入口，简化开发，通过它可以使用SqlContext、HiveContext
+>
+>   ```java
+>   //默认是使用SqlContext的功能，若需要使用HiveContext，在构建时调用enableHiveSupport()即可
+>   SparkSession spark = SparkSession
+>         .builder()
+>         .appName("Java Spark SQL basic example")
+>         .config("spark.some.config.option", "some-value")
+>         .getOrCreate();
+>   
+>   //从sparkContext中得到JavaSparkContext 
+>   JavaSparkContext sc = JavaSparkContext.fromSparkContext(spark.sparkContext());
+>    
+>   //从JavaSparkContext中得到SparkContext 
+>   SparkContext sparkContext = JavaSparkContext.toSparkContext(sc);
+>   ```
+>
+> - 
+
+## RDD
+
+### RDD概念
+
+> - 弹性分布式数据集，是spark中的数据（逻辑）抽象，它代表一个不可变、可分区、里面的元素可以并行计算的集合
+>
+>   ![1578125995818](images/1578125995818.png)
+>
+> - 不可变：rdd不提供修改原始数据集的操作，只能进行转化生成新的rdd
+>
+> - 可分区：分区是为了并行计算
+
+### RDD属性
+
+> - 一组分区，即数据集的基本组成单位
+> - 分区函数，计算每条数据属于哪个分区
+> - RDD的依赖关系
+> - 一个列表，存储存取每个Partition的的优先位置（在spark中，移动数据不如移动计算，即优先将任务发给数据所在节点(datanode)的excutor来计算，这样就避免了网络IO，效率更高）
+
+### RDD特点
+
+> - 不可变
+> - 对RDD进行改动，只能通过转换操作，生成一个新的rdd
+> - rdd之间存在依赖关系，即血缘，rdd的执行时按照血缘延迟计算（执行行动算子如collect开始计算）的
+> - 血缘关系较长，可以通过持久化来切断血缘关系
+
+## spark中rdd的创建
+
+> - 共3种方式，从集合创建、从外部存储创建（如本地文件系统，hdfs集群）、从其它rdd创建
+
+### 从内存中的集合创建rdd
+
+> - spark提供了2个方法，parallelize和makeRDD
+> - parallelize的并行度默认是**max(totalCoreCount,2)**,totalCoreCount是当前cpu可用的核心数，也可以在sparkConf中配置`spark.default.parallelism`来指定并行度
+> - parallelize是创建并行的rdd，可以指定切片数
+> - makeRDD内部调用的还是parallelize，**没有区别**
+
+### 从外部存储创建rdd
+
+> - 使用textFile方法，其中的path可以指定通配符（如：/home/data/\*/\*），甚至可以使用正则表达式
+> - textFile不会递归遍历文件夹，若指定的path下包含目录，会报错
+> - textFile的**最小分区**是min(defaultParallelism,2)，它取决于hadoop的切片规则
+> - textFile切片规则
+
+### 从其它rdd创建
