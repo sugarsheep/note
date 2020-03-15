@@ -152,8 +152,6 @@ Docker运行在CentOS-6.5或更高的版本的CentOS 上，要求系统为64位�
 >     yum install https://get.docker.com/rpm/1.7.1/centos-6/RPMS/x86_64/docker-engine-1.7.1-1.el6.x86_64.rpm
 >     ```
 >
->   - 1
->
 > - 3.安装后的配置文件：/etc/sysconfig/docker
 >
 > - 4.启动Docker后台服务:service docker start
