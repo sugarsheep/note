@@ -119,4 +119,170 @@ public void gotoWork(){
 >   在Java堆和Native堆中来回复制数据。
 > - 会发生OutOfMemoryError
 
+### 字符串常量池
+
+> - 自JDK 7起，原本存放在永久代的字符串常量池被移至Java堆之中
+>
+> - ```java
+>   public class RuntimeConstantPoolOOM {
+>       public static void main(String[] args) {
+>           //toString()方法会new一个字符串对象
+>           String str1 = new StringBuilder("计算机").append("软件").toString();
+>           //常量池保存str1的引用
+>           System.out.println(str1.intern() == str1); //true
+>   
+>           String str2 = new StringBuilder("ja").append("va").toString();
+>           System.out.println(str2.intern() == str2); //false
+>       }
+>   }
+>   ```
+
+代码运行结果解析
+
+> - 对于字符串"计算机软件",首先str1是一个对象，intern()方法实现就不需要再拷贝字符串的实例到永久代了，既然字符串常量池已经移到Java堆中，那只需要在常量池里记录一下首次出现的实例引用即可，因此intern()返回的引用和由StringBuilder创建的那个字符串实例就是同一个
+
+![1584540355909](images/1584540355909.png)
+
 ## HotSpot虚拟机对象探秘
+
+### 对象的创建
+
+> - 对象所需内存的大小在类加载完成后便可完全确定
+> - **指针碰撞**：假设Java堆中内存是绝对规整的，所有被使用过的内存都被放在一边，空闲的内存被放在另一边，中间放着一个指针作为分界点的指示器，那所分配内存就仅仅是把那个指针向空闲空间方向挪动一段与对象大小相等的距离
+> - **空闲列表**：但如果Java堆中的内存并不是规整的，已被使用的内存和空闲的内存相互交错在一起，那
+>   就没有办法简单地进行指针碰撞了，虚拟机就必须维护一个列表，记录上哪些内存块是可用的，在分
+>   配的时候从列表中找到一块足够大的空间划分给对象实例，并更新列表上的记录
+> - 当使用Serial、ParNew等带压缩整理过程的收集器时，系统采用的分配算法是指针碰撞，既简单又高效；而当使用CMS这种基于清除(Sweep）算法的收集器时，理论上就只能采用较为复杂的空闲列表来分配内存
+> - **本地线程分配缓冲**:是把内存分配的动作按照线程划分在不同的空间之中进行，即每个线程在Java堆中预先分配一小块内存,哪个线程要分配内存，就在哪个线程的本地缓冲区中分配，只有本地缓冲区用完
+>   了，分配新的缓存区时才需要同步锁定。虚拟机是否使用TLAB，可以通过-XX：+/-UseTLAB参数来
+>   设定。
+
+### 对象的内存布局
+
+> - 对象在堆内存中的存储布局可以划分为三个部分：对象头（Header）、实例数据（Instance Data）和对齐填充（Padding）
+> - **对象头**:
+>   - 第一类是用于存储对象自身的运行时数据，如哈希码（HashCode）、GC分代年龄、锁状态标志、线程持有的锁、偏向线程ID、偏向时间戳等，这部分数据的长度在32位和64位的虚拟机（未开启压缩指针）中分别为32个比特和64个比特，官方称它为“Mark Word”
+>   - 另外一部分是类型指针，即对象指向它的类型元数据的指针，Java虚拟机通过这个指针来确定该对象是哪个类的实例
+>   - 并不是所有的虚拟机实现都必须在对象数据上保留类型指针
+>   - 如果对象是一个Java数组，那在对象头中还必须有一块用于记录数组长度的数据
+> - **实例数据部分**:
+>   - 即我们在程序代码里面所定义的各种类型的字段内容，无论是从父类继承下来的，还是在子类中定义的字段都必须记录起来
+>   - 相同宽度的字段总是被分配到一起存放，在满足这个前提条件的情况下，在父类中定义的变量会出现在子类之前
+> - **对齐填充**:由于HotSpot虚拟机的自动内存管理系统要求对象起始地址必须是8字节的整数倍，换句话说就是任何对象的大小都必须是8字节的整数倍。对象头部分已经被精心设计成正好是8字节的倍数（1倍或者
+>   2倍），因此，如果对象实例数据部分没有对齐的话，就需要通过对齐填充来补全
+
+### 对象的访问定位
+
+> - 我们的Java程序会通过栈上的reference数据来操作堆上的具体对象,主流的访问方式主要有使用句柄和直接指针两种
+>
+> - **句柄**:Java堆中将可能会划分出一块内存来作为句柄池，reference中存储的就
+>   是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自具体的地址信息
+>
+>   ![1584451003381](images/1584451003381.png)
+>
+> - **直接指针**:，Java堆中对象的内存布局就必须考虑如何放置访问类型数据的相关信息，reference中存储的直接就是对象地址
+>
+>   ![1584451161843](images/1584451161843.png)
+>
+> - 这两种对象访问方式各有优势，使用句柄来访问的最大好处就是reference中存储的是稳定句柄地址，在对象被移动（垃圾收集时移动对象是非常普遍的行为）时只会改变句柄中的实例数据指针，而reference本身不需要被修改
+
+### 实战：OutOfMemoryError异常
+
+> - 在《Java虚拟机规范》的规定里，除了程序计数器外，虚拟机内存的其他几个运行时区域都有发生OutOfMemoryError（下文称OOM）异常的可能
+
+#### Java堆溢出
+
+> - Java堆用于储存对象实例，我们只要不断地创建对象，并且保证GC Roots到对象之间有可达路径来避免垃圾回收机制清除这些对象，那么随着对象数量的增加，总容量触及最大堆的容量限制后就会产生内存溢出异常。
+
+虚拟机参数设置
+
+> -Xms20m -Xmx20m -XX:+HeapDumpOnOutOfMemoryError
+
+**代码**
+
+```java
+public class HeapOOM {
+    static class OOMObject {
+    }
+
+    public static void main(String[] args) {
+        List<OOMObject> list = new ArrayList<>();
+        while (true) {
+            list.add(new OOMObject());
+        }
+    }
+}
+```
+
+**异常信息**
+
+```
+java.lang.OutOfMemoryError: Java heap space
+Dumping heap to java_pid25112.hprof ...
+Heap dump file created [29391029 bytes in 0.067 secs]
+Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+	at java.util.Arrays.copyOf(Arrays.java:3210)
+	at java.util.Arrays.copyOf(Arrays.java:3181)
+	at java.util.ArrayList.grow(ArrayList.java:265)
+	at java.util.ArrayList.ensureExplicitCapacity(ArrayList.java:239)
+	at java.util.ArrayList.ensureCapacityInternal(ArrayList.java:231)
+	at java.util.ArrayList.add(ArrayList.java:462)
+	at com.sugar.HeapOOM.main(HeapOOM.java:13)
+
+```
+
+**解决办法**
+
+> - 使用jdk自带工具jvisualvm.exe查看生成的hprof文件，查看具体异常的对象,如下图，可以看出创建了大量的OOMObject对象导致OOM
+>
+>   ![1584453799100](images/1584453799100.png)
+>
+> - 若是**内存泄漏**，即创建了大量不必要的对象，就需要查看代码bug
+>
+> - 若是**内存不够**，就需要调整堆的大小-Xmx与-Xms
+
+#### 虚拟机栈和本地方法栈溢出
+
+> - HotSpot虚拟机不支持栈的动态扩展，所以不会oom，只会StackOverflowError
+>
+> - 设置-Xss128k，然后递归调用方法，就会抛出StackOverflowError
+>
+> - ```java
+>   public class JavaVMStackSOF {
+>       private int stackLength = 1;
+>   
+>       public void stackLeak() {
+>           stackLength++;
+>           stackLeak();
+>       }
+>   
+>       public static void main(String[] args) throws Throwable {
+>           JavaVMStackSOF oom = new JavaVMStackSOF();
+>           try {
+>               oom.stackLeak();
+>           } catch (Throwable e) {
+>               System.out.println("stack length:" + oom.stackLength);
+>               throw e;
+>           }
+>       }
+>   }
+>   ```
+
+#### 方法区和运行时常量池溢出
+
+> 
+
+## 虚拟机参数
+
+| 参数                              | 功能                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| -XX：+HeapDumpOnOutOf-MemoryError | 可以让虚拟机在出现内存溢出异常的时候Dump出当前的内存堆转储快照 |
+| -Xms                              | 堆初始化内存大小,单位M                                       |
+| -Xmx                              | 堆最大内存大小，单位M                                        |
+| -Xoss                             | 设置本地方法栈大小，不会生效                                 |
+| -Xss                              | 设置栈容量                                                   |
+|                                   |                                                              |
+|                                   |                                                              |
+|                                   |                                                              |
+|                                   |                                                              |
+
