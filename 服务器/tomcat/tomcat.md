@@ -389,3 +389,109 @@ Container容器提供了一系列方法
 
 Container接口扩展了Iifecycle接口，Iifecycle接口用来统一管理各组件的生命周期
 
+### tomcat启动流程
+
+#### 流程
+
+![1584968744411](images/1584968744411.png)
+
+> - 首先startup.bat启动程序，startup.bat实际上调用的还是catalina.bat，传递了参数start
+>
+> - ![1584969045866](images/1584969045866.png)
+>
+> - 而catalina.bat才是启动Bootstrap的脚本
+>
+>   ```
+>   set MAINCLASS=org.apache.catalina.startup.Bootstrap
+>   ```
+>
+> - 完整步骤
+>
+>   - 启动tomcat ，需要调用 bin/startup.bat (在linux目录下，需要调用bin/startup.sh) ，在startup.bat 脚本中，调用了catalina.bat.
+>   - 在catalina.bat 脚本文件中，调用了Bootstrap 中的main方法
+>   - 在BootStrap 的main 方法中调用了init 方法 ，来创建catalina及初始化类加载器。
+>   - 在Bootstrap 的main 方法中调用了load 方法，在其中又调用了catalina的load方法。
+>   - 在catalina 的load 方法中，需要进行一些初始化的工作，并需要构造**Digester 对象，用于解析 XML。**
+>   - 然后在调用后续组件的初始化操作。。。
+>
+> - 加载Tomcat的配置文件，初始化容器组件 ，监听对应的端口号，准备接受客户端请求。
+
+#### 源码解析
+
+##### Lifecycle
+
+> 由于所有的组件均存在初始化、启动、停止等生命周期方法，拥有生命周期管理的特性，所以Tomcat在设计的时候，基于生命周期管理抽象成了一个接口 Lifecycle，而组件 server、 service、Container、Executor、Connector 组件，都实现了一个生命周期的接口，从而具有了以下生命周期中的核心方法:
+>
+> 	-  init()：初始化组件
+> 	- start ():启动组件
+> 	- stop(）:停止组件
+> 	- destroy()：销毁组件
+
+![1584969934426](images/1584969934426.png)
+
+##### 各组件的默认实现
+
+> 上面我们提到的Server、 service、Engine、Host、Context都是接口，下图中罗列了这些接口的默认实现类。当前对于 Endpoint组件来说，在Tomcat中没有对应的Endpoint接口，但是有一个抽象类 AbstractEndpoint ，其下有三个实现类:NioEndpoint、Nio2Endpoint,AprEndpoint ，这三个实现类，分别对应于前面讲解链接器 Coyote 时提到的链接器支持的三种IO模型:NIO,NIO2，APR，Tomcat8.5版本中，默认采用的是 NioEndpoint.
+>
+> ![1584970080950](images/1584970080950.png)
+
+> protocolHandler : coyote协议接口，通过封装Endpoint和processor实现针对具体协议的处理功能。Tomcat按照协议和io提供了6个实现类。
+>
+> AJP协议:
+>
+> 	- 1)AjpNioProtocol :采用NIo的IO模型。
+> 	- 2）AjpNio2Protocol:采用NIo2的IO模型。
+> 	- 3)AjpAprprotocol :采用APR的Io模型，需要依赖于APR库。
+>
+> HTTP协议:
+>
+> 	- 1) Http11Nioprotocol :采用NIo的Io模型，默认使用的协议(如果服务器没有安装APR)。
+> 	- 2）Http11Nio2Protocol:采用NIo2的IO模型。
+> 	- 3) Http11AprProtocol :采用APR的IO模型，需要依赖于APR库。
+>
+> ![1584970487024](images/1584970487024.png)
+
+##### 源码入口
+
+> 主类：org.apache.catalina.startup.Bootstrap
+>
+> ![1584970651158](images/1584970651158.png)
+>
+> 11
+
+#### 总结
+
+> - 从启动流程图中以及源码中，我们可以看出Tomcat的启动过程非常标准化，统一按照生命周期管理接口Iifecycle的定义进行启动。首先调用init() 方法进行组件的逐级初始化操作，然后再调用start()方法进行启动。
+> - 每一级的组件除了完成自身的处理外，还要负责调用子组件响应的生命周期管理方法，组件与组件之间是松耦合的，因为我们可以很容易的通过配置文件进行修改和替换。
+
+### Tomcat请求处理流程
+
+#### 请求流程
+
+> - 设计了这么多层次的容器，Tomcat是怎么确定每一个请求应该由哪个wrapper容器里的servlet来处理的呢?答案是，Tomcat是用Mapper组件来完成这个任务的，
+>
+> - Mapper组件的功能就是将用户请求的URL定位到一个servlet，它的工作原理是:Mapper组件里保存了web应用的配置信息，其实就是容器组件与访问路径的映射关系，比如Host容器里配置的域名、Context容器里的web应用路径，以及wrapper容器里servlet映射的路径，你可以想象这些配置信息就是一个多层次的Map。
+> - 当一个请求到来时，Mapper组件通过解析请求URL里的域名和路径，再到自己保存的Map里去查找，就能定位到一个servlet。请你注意，一个请求URL最后只会定位到一个wrapper容器，也就是一个servlet.
+> - 下面的示意图中，就描述了当用户请求链接 http://www. itcast.cn/bbs/findAll 之后，是如何找到最终处理业务逻辑的servlet。
+>
+> ![1584972953899](images/1584972953899.png)
+
+![1584973171730](images/1584973171730.png)
+
+> 1)Connector组件Endpoint中的Acceptor监听客户端套接字连接并接收socket.
+>
+> 2)将连接交给线程池Executor处理，开始执行请求响应任务。
+>
+> 3)Processor组件读取消息报文，解析请求行、请求体、请求头，封装成Request对象。
+>
+> 4）Mapper组件根据请求行的URL值和请求头的Host值匹配由哪个Host容器、context容器、Wrapper容器处理请求。
+>
+> 5)coyoteAdaptor组件负责将connector组件和Engine容器关联起来，把生成的Request对象和响应对象Response传递到Engine容器中，调用 Pipeline（责任链）。
+>
+> 6) Engine容器的管道开始处理，管道中包含若干个valve(阈)、每个valve负责部分处理逻辑。执行完Valve后会执行基础的 Valve--StandardEngineValve，负责调用Host容器的Pipeline。
+>
+> 7) Host容器的管道开始处理，流程类似，最后执行 Context容器的Pipeline.
+>
+> 8)Context容器的管道开始处理，流程类似，最后执行 Wrapper容器的Pipeline。
+>
+> 9) wrapper容器的管道开始处理，流程类似，最后执行 wrapper容器对应的servlet对象的 处理方法。
