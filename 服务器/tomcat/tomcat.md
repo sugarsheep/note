@@ -495,3 +495,23 @@ Container接口扩展了Iifecycle接口，Iifecycle接口用来统一管理各�
 > 8)Context容器的管道开始处理，流程类似，最后执行 Wrapper容器的Pipeline。
 >
 > 9) wrapper容器的管道开始处理，流程类似，最后执行 wrapper容器对应的servlet对象的 处理方法。
+
+#### 请求流程源码解析
+
+![1585062704480](images/1585062704480.png)
+
+> - 在前面所讲解的Tomcat的整体架构中，我们发现Tomcat中的各个组件各司其职，组件之间松耦合，确保了整体架构的可伸缩性和可拓展性，那么在组件内部，如何增强组件的灵活性和拓展性呢？ 
+> - 在Tomcat中，每个container组件采用责任链模式来完成具体的请求处理。在Tomcat中定义了Pipeline 和 valve 两个接口，Pipeline用于构建责任链，后者代表责任链上的每个处理器。
+> - Pipeline 中维护了一个基础的valve，它始终位于Pipeline的末端(最后执行)，封装了具体的请求处理和输出响应的过程。
+> - 当然，我们也可以调用addvalve方法，为Pipeline 添加其他的valve， 后添加的valve 位于基础的valve之前，并按照添加顺序执行。Pipeline通过获得首个valve来启动整个链条的执行
+
+## Jasper
+
+### Jasper简介
+
+> - 对于基于JsP 的web应用来说，我们可以直接在Jsp页面中编写 Java代码，添加第三方的标签库，以及使用EL表达式。但是无论经过何种形式的处理，最终输出到客户端的都是标准的HTML页面(包含js , css...），并不包含任何的java相关的语法。也就是说，我们可以把jsp看做是一种运行在服务端的脚本。那么服务器是如何将 Jsp页面转换为HTML页面的呢？
+> - Jasper模块是Tomcat的Jsp核心引擎，我们知道Jsp本质上是一个servlet。 Tomcat使用Jasper对Jsp语法进行解析，生成servlet并生成Class字节码，用户在进行访问jsp时，会访问servlet，最终将访问的结果直接响应在浏览器端。另外，在运行的时候，Jasper还会检测JSp文件是否修改，如果修改，则会重新编译JSp文件。
+
+### JSP编译方式
+
+### JSP编译原理
