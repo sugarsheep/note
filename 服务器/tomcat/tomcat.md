@@ -515,3 +515,169 @@ Container接口扩展了Iifecycle接口，Iifecycle接口用来统一管理各�
 ### JSP编译方式
 
 ### JSP编译原理
+
+## tomcat服务器配置
+
+> Tomcat 服务器的配置主要集中于 tomcat/conf 下的 catalina.policy, catalina.properties, context.xml, server.xml，tomcat-users.xml, web.xml文件。
+
+### server.xml
+
+> server.xml是tomcat 服务器的核心配置文件，包含了Tomcat的 servlet 容器(Catalina )的所有配置。由于配置的属性特别多，我们在这里主要讲解其中的一部分重要配置。
+
+#### Server
+
+> Server是server.xml的根元素，用于创建一个server实例，默认使用的实现类是org.apache.catalina.core.standardserver.
+
+```xml
+<Server port="8005" shutdown="SHUTDOWN">
+```
+
+> - port：tomcat监听的关闭服务器的端口
+> - shutdown：关闭服务器的指令字符串
+
+Server内嵌的子元素是Listener、GlobalNamingResources、Service
+
+默认配置的5个Listener的含义
+
+```xml
+ <!--用于以日志形式输出服务器、操作系统、JVM的版本信息-->
+<Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+     
+<!--用于加载(服务器启动)和 销毁(服务器停止) APR。如果找不到APR库，则会输出日志，并不影响Tomcat启动-->
+  <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+   <!--用于避免JRE内存泄漏问题--> 
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+   <!--用户加载(服务器启动)和 销毁(服务器停止) 全局命名服务--> 
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+   <!--用于在Context停止时重建Executor 池中的线程，以避免Threadtocal 相关的内存泄漏--> 
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+```
+
+GlobalNamingResources中定义了全局命名服务
+
+```xml
+  <GlobalNamingResources>
+    <!-- Editable user database that can also be used by
+         UserDatabaseRealm to authenticate users
+    -->
+    <Resource name="UserDatabase" auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database that can be updated and saved"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" />
+  </GlobalNamingResources>
+```
+
+#### Service
+
+> 该元素用于创建 Service 实例，默认使用 org.apache.catalina.core.Standardservice。默认情况下，Tomcat 仅指定了Service 的名称，值为“Catalina". Service 可以内嵌的元素为:Listener、 Executor, Connector、 Engine，其中 ：Listener 用于为Service添加生命周期监听器，Executor 用于配置service 共享线程池，Connector 用于配置service 包含的链接器，Engine 用于配置service中链接器对应的Servlet 容器引擎。
+
+```xml
+  <Service name="Catalina">
+...
+  </Service>
+```
+
+一个server服务器，可以包含多个service服务
+
+#### Executor
+
+> 默认情况下，Service并未添加共享线程池配置。如果我们想添加一个线程池，可以在 <Service> 下添加如下配置:
+>
+> ```xml
+> 	<Executor name="tomcatThreadPoll"
+> 		namePrefix="catalina-exec-"
+> 		maxThreads="200"
+> 		minSpareThreads="100"
+> 		maxIdleTime="60000"
+> 		maxQueueSize="Integer.MAX_VALUE"
+> 		prestartminSpareThreads="false"
+> 		threadPriority="5"
+> 		className="org.apache.catalina.core.StandardThreadExecutor">
+> 	</Executor>
+> ```
+>
+> 
+
+属性说明
+
+| 属性                    | 含义                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| name                    | 线程池名称，用于 Connector中指定。                           |
+| namePrefix              | 所创建的每个线程的名称前缀，一个单独的线程名称为 namePrefixThreadNumber. |
+| maxThreads              | 池中最大线程数。                                             |
+| minSpareThreads         | 活跃线程数，也就是核心池线程数，这些线程不会被销毁，会一直存在。 |
+| maxIdleTime             | 线程空闲时间，超过该时间后，空闲线程会被销毁，默认值为6000(1分钟)，单位毫秒。 |
+| maxQueueSize            | 在被执行前最大线程排队数目，默认为Int的最大值，也就是广义的无限。除非特殊情况，这个值不需要更改，否则会有请求不会被处理的情况发生。 |
+| prestartminSpareThreads | 启动线程池时是否启动 minspareThreads部分线程。默认值为false，即不启动。 |
+| threadPriority          | 线程池中线程优先级，默认值为5 ，值从1到10。                  |
+| className               | 线程池实现类，未指定情况下，默认实现类为org.apache.catalina.core.StandardThreadExecutor。如果想使用自定义线程池首先需要实现org.apache.catalina.Executor接口 |
+
+![1585148978801](images/1585148978801.png)
+
+如果不配置共享线程池，那么Catalina各组件在用到线程池时会独立创建。
+
+#### Connector
+
+> Connector 用于创建链接器实例。默认情况下，server.xml 配置了两个链接器，一个支持HTTP协议，一个支持AJP协议。因此大多数情况下，我们并不需要新增链接器配置，只是根据需要对已有链接器进行优化。
+>
+> ```xml
+>     <Connector port="8080" protocol="HTTP/1.1"
+>                connectionTimeout="20000"
+>                redirectPort="8443" />
+>                
+> <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+> 
+> ```
+
+属性说明
+
+> 1) port：端口号，Connector 用于创建服务端socket 并进行监听，以等待客户端请求链接。如果该属性设置为0,Tomcat将会随机选择一个可用的端口号给当前Connector 使用。
+>
+> 2) protocol ：当前Connector 支持的访问协议。默认为 HTTP/1.1 ，并采用自动切换机制选择一个基于 JAVA NIO的链接器或者基于本地APR的链接器(根据本地是否含有Tomcat的本地库判定)。
+>
+> 如果不希望采用上述自动切换的机制，而是明确指定协议，可以使用以下值。
+>
+> Http协议:
+>
+> ```
+> 1 org.apache.coyote.http11.nttp11NioProtocol ，非阻塞式 Java NIO 链接器
+> 2 org.apache.coyote.http11.nttp11Nio2Protocol ，非阻塞式 JAVA NIO2链接器
+> 3 org.apache.coyote.http11.Http11AprProtocol，APR 链接器
+> ```
+>
+> AJP协议
+>
+> ```
+> 1 org.apache. coyote.ajp.AjpNioprotocol，非阻塞式 Java NIo链接器
+> 2 org.apache.coyote.ajp.AjpNio2Protocol，非阻塞式 JAVA NIO2 链接器
+> 3 org.apache.coyote.ajp.AjpAprProtocol, APR 链接器
+> ```
+>
+> 3) connectionTimeOut : Connector 接收链接后的等待超时时间，单位为毫秒。 -1 表示不超时。
+>
+> 4) redirectPort:当前Connector 不支持SSL请求(**https请求**)，接收到了一个请求，并且也符合security-constraint 约束，需要SSL传输，Catalina自动将请求重定向到指定的端口。
+>
+> 5) executor ：指定共享线程池的名称，也可以通过maxThreads、 minSpareThreads 等属性配置内部线程池。
+>
+> 6) URIEncoding :用于指定编码URI的字符编码，Tomcat8.x版本默认的编码为 UTF-8,Tomcat7.x版本默认的编码为 ISO-8859-1。
+>
+> 完整的配置如下:
+>
+> ```
+>     <Connector port="8080" protocol="HTTP/1.1"
+>                connectionTimeout="20000"
+>                redirectPort="8443" 
+>                executor="tomcatThreadPoll"
+>                maxThreads="200"
+>                minSpareThreads="100"
+>                acceptCount="1000"
+>                maxConnections="1000"
+>                connectionTimeOut="20000"
+>                compression="on"
+>                compressionMinSize="2048"
+>                disableUploadTimeOut="true"
+>                URIEncoding="UTF-8"/>
+> ```
+>
+> 
