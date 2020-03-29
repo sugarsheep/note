@@ -50,4 +50,8 @@
    git pull [别名] master
    ```
 
-7. test
+7. 解决每次push都要输入用户名和密码的问题
+
+   > - 先执行**git config --global credential.helper store**，执行后下一次输入用户名和密码后将会保存起来，以后就不用再次输入了
+
+8. 
