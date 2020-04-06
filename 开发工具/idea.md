@@ -51,3 +51,19 @@
 ![1577708109649](images/1577708109649.png)
 
 ![1577708122889](images/1577708122889.png)
+
+## idea插件反编译整个jar包源码
+
+> - 安装插件java-decompiler
+>
+>   ![1586153149720](images/1586153149720.png)
+>
+> - 反编译指定jar包，如logback-classic-1.2.3.jar，命令如下
+>
+>   ```shell
+>   java -cp "C:\Program Files\JetBrains\IntelliJ IDEA 2018.3\plugins\java-decompiler\lib\java-decompiler.jar" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=true logback-classic-1.2.3.jar mysrc
+>   ```
+>
+>   **mysrc**是编译后存放文件的目录，需要先创建好，程序执行完后会在该目录下生成反编译后的压缩包
+>
+> - 
