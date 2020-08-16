@@ -1,10 +1,14 @@
-# springmvc hellowrold
+## 明
 
-## 项目目录结构
+## 目录
+
+## springmvc hellowrold
+
+### 项目目录结构
 
 ![1560474346072](images/1560474346072.png)
 
-## web.xml配置
+### web.xml配置
 
 ```xml
     <!--把applicationContext.xml加入到配置文件中-->
@@ -33,7 +37,7 @@
     </servlet-mapping>
 ```
 
-## dispatcher-servlet.xml
+### dispatcher-servlet.xml
 
 ```xml
 <!--只扫描controller组件-->    
@@ -47,7 +51,7 @@
     </bean>
 ```
 
-## applicationContext.xml
+### applicationContext.xml
 
 ```xml
 <!--扫描除了controller的组件-->    
@@ -56,7 +60,7 @@
     </context:component-scan>
 ```
 
-## HelloController
+### HelloController
 
 ```java
 @Controller
@@ -70,9 +74,9 @@ public class HelloController {
 }
 ```
 
-# RequestMapping
+## RequestMapping
 
-## 使用 @RequestMapping 映射请求
+### 使用 @RequestMapping 映射请求
 
 > 1. Spring MVC 使用 @RequestMapping 注解为控制器指定可 以处理哪些 URL 请求
 >
@@ -98,7 +102,7 @@ public class HelloController {
 >    /user/createUser??: 匹配 /user/createUseraa、/user/createUserbb 等 URL
 >    ```
 
-## 映射请求参数、请求方法或请求头
+### 映射请求参数、请求方法或请求头
 
 > 标准的 HTTP 请求报头
 >
@@ -112,7 +116,7 @@ public class HelloController {
 >    param1 != value1: 表示请求包含名为 param1 的请求参数，但其值不能为 value1
 >    {“param1=value1”, “param2”}: 请求必须包含名为 param1 和param2 的两个请求参数，且 param1 参数的值必须为 value1
 
-# @PathVariable
+## @PathVariable
 
 > 1. @PathVariable 映射 URL 绑定的占位符
 >
@@ -128,7 +132,7 @@ public class HelloController {
 >        }
 >    ```
 
-# REST
+## REST
 
 > 1. REST：即 Representational State Transfer。（资源）表现层状态转化。是目前最流行的一种互联网软件架构。它结构清晰、符合标准、易于理解、扩展方便，所以正得到越来越多网站的采用
 >
@@ -174,13 +178,13 @@ public class HelloController {
 >        }
 >    ```
 
-# 请求处理方法签名
+## 请求处理方法签名
 
 > 1. Spring MVC 通过分析处理方法的签名，将 HTTP 请求信息绑定到处理方法的相应人参中。
 > 2. Spring MVC 对控制器处理方法签名的限制是很宽松的，几乎可以按喜欢的任何方式对方法进行签名。
 > 3. 必要时可以对方法及方法入参标注相应的注解（@PathVariable、@RequestParam、@RequestHeader 等）、Spring MVC 框架会将 HTTP 请求的信息绑定到相应的方法入参中，并根据方法的返回值类型做出相应的后续处理。
 
-## @RequestParam
+### @RequestParam
 
 > 在处理方法入参处使用 @RequestParam 可以把请求参数传递给请求方法
 > value：参数名 
@@ -188,20 +192,20 @@ public class HelloController {
 >
 > defaultValue：设置默认值
 
-## @RequestHeader
+### @RequestHeader
 
 > 绑定请求报头的属性值，使用方式同@RequestParam
 
-## @CookieValue
+### @CookieValue
 
 > 绑定请求中的 Cookie 值，使用方式同@RequestParam
 
-# 使用 POJO 对象绑定请求参数值
+## 使用 POJO 对象绑定请求参数值
 
 > Spring MVC 会按请求参数名和 POJO 属性名进行自动匹配，自动为该对象填充属性值。支持级联属性。
 > 如：dept.deptId、dept.address.tel 等
 
-# 使用 Servlet API 作为入参
+## 使用 Servlet API 作为入参
 
 > MVC 的 Handler 方法可以接受哪些 ServletAPI 类型的参数
 >
@@ -217,7 +221,7 @@ public class HelloController {
 > Writer
 > ```
 
-# 处理模型数据
+## 处理模型数据
 
 > Spring MVC 提供了以下几种途径输出模型数据：
 >
@@ -226,7 +230,7 @@ public class HelloController {
 > 3. @SessionAttributes: 将模型中的某个属性暂存到 HttpSession 中，以便多个请求之间可以共享这个属性
 > 4. @ModelAttribute: 方法入参标注该注解后, 入参的对象就会放到数据模型中
 
-## ModelAndView
+### ModelAndView
 
 > 1. 控制器处理方法的返回值如果为 ModelAndView, 则其既包含视图信息，也包含模型数据信息
 >
@@ -244,7 +248,7 @@ public class HelloController {
 >    void setViewName(String viewName)
 >    ```
 
-## Map 及 Model
+### Map 及 Model
 
 > 1. Spring MVC 在内部使用了一个org.springframework.ui.Model 接口存储模型数据
 >
@@ -257,7 +261,7 @@ public class HelloController {
 >
 >    ![1560474381579](images/1560474381579.png)
 
-## @SessionAttributes
+### @SessionAttributes
 
 > 1. 若希望在多个请求之间共用某个模型属性数据，则可以在控制器类上标注一个 @SessionAttributes, Spring MVC 将在模型中对应的属性暂存到 HttpSession 中。
 > 2. @SessionAttributes 除了可以通过属性名指定需要放到会话中的属性外，还可以通过模型属性的对象类型指定哪些模型属性需要放到会话中
@@ -266,7 +270,7 @@ public class HelloController {
 >    @SessionAttributes(types={User.class, Dept.class}) 
 >    @SessionAttributes(value={“user1”, “user2”}, types={Dept.class})
 
-### 由@SessionAttributes引发的异常
+#### 由@SessionAttributes引发的异常
 
 > 1. 如果在处理类定义处标注了@SessionAttributes(“xxx”)，如@SessionAttributes(“user”),若某个方法的入参是User类型的pojo，则会尝试从会话中获取该属性，并将其赋给该入参，然后再用请求消息填充该入参对象，如果在会话中找不到对应的属性，则抛出 HttpSessionRequiredException 异常
 >
@@ -287,11 +291,11 @@ public class HelloController {
 >
 >    
 
-## @ModelAttribute
+### @ModelAttribute
 
 > 1. 在方法定义上使用 @ModelAttribute 注解：Spring MVC在调用目标处理方法前，会先逐个调用在方法级上标注了@ModelAttribute 的方法。
 > 2. 在方法的入参前使用 @ModelAttribute 注解：可以从隐含对象中获取隐含的模型数据中获取对象，再将请求参数 绑定到对象中，再传入入参将方法入参对象添加到模型中
-### 注释void返回值的方法
+#### 注释void返回值的方法
 
 > 
 >
@@ -314,7 +318,7 @@ public class HelloController {
 >
 >    在这个代码中，访问控制器方法helloWorld时，会首先调用populateModel方法，将页面参数abc(/helloWorld.ht?abc=text)放到model的attributeName属性中，在视图中可以直接访问。
 
-### 注释返回具体类的方法
+#### 注释返回具体类的方法
 
 > ```java
 > @Controller
@@ -339,7 +343,7 @@ public class HelloController {
 > @ModelAttribute(value="myUser")
 > ```
 
-### 对象合并
+#### 对象合并
 
 > ```java
 > @Controller
@@ -364,7 +368,7 @@ public class HelloController {
 >
 > 比如：User对象，首先从数据库中获取此对象，客户端表单只有account属性，提交时就只会改变account属性
 
-### **对象合并指定对象名称**
+#### **对象合并指定对象名称**
 
 > ```java
 > @Controller
@@ -387,37 +391,37 @@ public class HelloController {
 >
 > 这样传入到helloWorld方法的参数必须是myUser匹配的对象才行
 
-### POJO类型入参执行流程
+#### POJO类型入参执行流程
 
 ![1560474398741](images/1560474398741.png)
 
-# 视图解析器流程
+## 视图解析器流程
 
 ![1560474416800](images/1560474416800.png)
 
-## 视图和视图解析器
+### 视图和视图解析器
 
 > 1. 请求处理方法执行完成后，最终返回一个 ModelAndView对象。对于那些返回 String，View 或 ModeMap 等类型的处理方法，Spring MVC 也会在内部将它们装配成一个ModelAndView 对象，它包含了逻辑名和模型对象的视图
 > 2. Spring MVC 借助视图解析器（ViewResolver）得到最终的视图对象（View），最终的视图可以是 JSP ，也可能是Excel、JFreeChart 等各种表现形式的视图
 > 3. 对于最终究竟采取何种视图对象对模型数据进行渲染，处理器并不关心，处理器工作重点聚焦在生产模型数据的工作上，从而实现 MVC 的充分解耦
 
-### 视图
+#### 视图
 
 > 1. 视图的作用是渲染模型数据，将模型里的数据以某种形式呈现给客户。
 > 2. 为了实现视图模型和具体实现技术的解耦，Spring 在org.springframework.web.servlet 包中定义了一个高度抽象的 View接口：
 > 3. 视图对象由视图解析器负责实例化。由于视图是无状态的，所以他们不会有线程安全的问题（对于每一个请求都创建一个新的视图对象）
 
-### 常用的视图实现类
+#### 常用的视图实现类
 
 ![1560474430542](images/1560474430542.png)
 
-### 视图解析器
+#### 视图解析器
 
 > 1. SpringMVC 为逻辑视图名的解析提供了不同的策略，可以在 Spring WEB 上下文中配置一种或多种解析策略，并指定他们之间的先后顺序。每一种映射策略对应一个具体的视图解析器实现类。
 > 2. 视图解析器的作用比较单一：将逻辑视图解析为一个具体的视图对象。
 > 3. 所有的视图解析器都必须实现 ViewResolver 接口
 
-### 常用的视图解析器实现类
+#### 常用的视图解析器实现类
 
 ![1560474444816](images/1560474444816.png)
 
@@ -426,7 +430,7 @@ public class HelloController {
 > 3. SpringMVC 会按视图解析器顺序的优先顺序对逻辑视图名进行解析，直到解析成功并返回视图对象，否则将抛出 ServletException 异
 >    常
 
-### InternalResourceViewResolver
+#### InternalResourceViewResolver
 
 > 1. 若项目中使用了 JSTL， 则 SpringMVC 会自动把视图由InternalResourceView 转为 JstlView
 >
@@ -446,7 +450,7 @@ public class HelloController {
 >        <mvc:annotation-driven/>
 >    ```
 
-### Excel 视图
+#### Excel 视图
 
 > 1. 若希望使用  Excel 展示数据列表，仅需要扩展SpringMVC 提供的 AbstractExcelView 或AbstractJExcel View 即可。实现 buildExcelDocument() 方法，在方法中使用模型数据对象构建 Excel 文档就可以了。
 > 2. AbstractExcelView 基于 POI API，而 AbstractJExcelView 是基于 JExcelAPI 的。
@@ -454,16 +458,16 @@ public class HelloController {
 > 4. 若希望直接在浏览器中直接下载 Excel 文档，则可以设置响应头 Content-Disposition 的值为
 >    attachment;filename=xxx.xls
 
-### 关于重定向
+#### 关于重定向
 
 > 1. 一般情况下，控制器方法返回字符串类型的值会被当成逻 辑视图名处理
 > 2. 如果返回的字符串中带 forward: 或 redirect: •前缀时，SpringMVC 会对他们进行特殊处理：将 forward: 和redirect: 当成指示符，其后的字符串作为 URL 来处理
 >    redirect:success.jsp：会完成一个到 success.jsp 的重定向的操作 
 >    forward:success.jsp：会完成一个到 success.jsp 的转发操作
 
-# springmvc处理静态资源
+## springmvc处理静态资源
 
-## DispatcherServlet配置
+### DispatcherServlet配置
 
 ```xml
 <servlet>
@@ -484,7 +488,7 @@ public class HelloController {
 
 > 使用以上配置，DispatcherServlet会拦截所有请求，包括静态资源和RequestMapping的映射，url-pattern还有另外一种配置方式，即*.do的形式，这样可以保证静态资源不被拦截，但是这样就不能使用restful风格的url
 
-## 解决方案1
+### 解决方案1
 
 ```xml
     <mvc:default-servlet-handler/>
@@ -509,7 +513,7 @@ public class HelloController {
 >
 > 　　*WebSphere  默认 Servlet的名字 -- "SimpleFileServlet"*
 
-## 解决方案2
+### 解决方案2
 
 > 使用mvc:resources
 >
@@ -531,7 +535,7 @@ public class HelloController {
 > 2. 如果出现下面的错误，可能是没有配置 <**mvc**:annotation-driven /> 的原因。 报错WARNING: No mapping found for HTTP request with URI [/**mvc**/user/findUser/lisi/770] in DispatcherServlet with name 'springMVC'
 > 3. 使用 <mvc:resources/>元素,把 mapping 的 URI 注册到 SimpleUrlHandlerMapping的urlMap 中,key 为 mapping 的 URI pattern值,而 value为 ResourceHttpRequestHandler,这样就巧妙的把对**静态资源**的访问由 HandlerMapping 转到ResourceHttpRequestHandler 处理并返回,所以就支持 classpath 目录, jar 包内**静态资源**的访问.另外需要注意的一点是,不要对 SimpleUrlHandlerMapping 设置 defaultHandler. 因为对 static uri 的 defaultHandler 就是ResourceHttpRequestHandler,否则无法处理static resources request.
 
-## 解决方案3
+### 解决方案3
 
 > ## **激活Tomcat的defaultServlet来处理静态文件**
 >
@@ -552,7 +556,7 @@ public class HelloController {
 >
 > 要配置多个，每种文件配置一个。要写在DispatcherServlet的前面， 让defaultServlet先拦截，这个就不会进入**Spring**了
 
-## 多个HandlerMapping的执行顺序问题
+### 多个HandlerMapping的执行顺序问题
 
 > 1. DefaultAnnotationHandlerMapping 的 order 属性值是：0
 >
@@ -562,7 +566,7 @@ public class HelloController {
 >
 >    说明：order值越小，优先级越高
 
-## 强制浏览器更新
+### 强制浏览器更新
 
 > 有的时候我们希望能强制更新浏览器缓存的内容，这个时候我们可以给静态资源加入一个版本的概念。大概意思是在URL中加入一个版本，每次有更新的时候都更新版本号，这样每次更新后请求的静态资源路径都不一样，浏览器也就会重新从服务端获取静态资源进行缓存了。SpringMVC对此也提供了支持，我们可以通过`<mvc:fixed-version-strategy/>`来定义一个固定的版本号，这样我们的请求路径需要重写为加上版本号，比如按照之前静态资源的配置，原本请求路径是`/static/css/common.css`，加上版本号之后就是`/static/1.0/css/common.css`，因为我们配置的请求路径映射是`/static/**`，即只需要在`**`前加上版本号作为一级目录。SpringMVC接收到请求`/static/1.0/css/common.css`会自动提取出版本号1.0,并把请求版本号与当前版本号比较，能匹配则响应去掉版本号的内容，否则就是404了
 >
@@ -579,7 +583,7 @@ public class HelloController {
 >     </mvc:resources>
 > ```
 
-# springmvc表单标签
+## springmvc表单标签
 
 > 1. 通过 SpringMVC 的表单标签可以实现将模型数据中的属性和 HTML 表单元素相绑定，以实现表单数据更便捷编辑和表单值的回显
 >
@@ -622,7 +626,7 @@ public class HelloController {
 >        <form:errors path= “ username” /> ：显示特定表单对象属性的错误
 >    ```
 
-# 数据绑定流程
+## 数据绑定流程
 
 > 1. Spring MVC 主框架将 ServletRequest 对象及目标方法的入参实例传递给 WebDataBinderFactory 实例，以创建 DataBinder 实例对象
 >
@@ -640,7 +644,7 @@ public class HelloController {
 >
 > 6. Spring MVC 上下文中内建了很多转换器，可完成大多数 Java 类型的转换工作
 
-## 自定义类型装换器
+### 自定义类型装换器
 
 > 1. ConversionService 是 Spring 类型转换体系的核心接口。
 >
@@ -649,7 +653,7 @@ public class HelloController {
 > 3. 可通过 ConversionServiceFactoryBean 的 converters 属性注册自定义的类型转换器
 
 
-## Spring 支持的转换器
+### Spring 支持的转换器
 
 > Spring 定义了 3 种类型的转换器接口，实现任意一个转换器接口都可以作为自定义转换器注册到
 > ConversionServiceFactroyBean 中：
@@ -658,7 +662,7 @@ public class HelloController {
 > 2. ConverterFactory：将相同系列多个 “同质” Converter 封装在一起。如果希望将一种类型的对象转换为另一种类型及其子类的对象（例如将 String 转换为 Number 及 Number 子类（Integer、Long、Double 等）对象）可使用该转换器工厂类
 > 3. GenericConverter：会根据源类对象及目标类对象所在的宿主类中的上下文信息进行类型转换
 
-## Converter<S,T>
+### Converter<S,T>
 
 > 定义实体类
 >
@@ -738,7 +742,7 @@ public class HelloController {
 > }
 > ```
 
-## ConverterFactory
+### ConverterFactory
 
 > 定义Student类的一个子类
 >
@@ -823,7 +827,7 @@ public class HelloController {
 > }
 > ```
 
-## GenericConverter
+### GenericConverter
 
 > 关于 GenericConverter 的使用，这里也举一个例子。假设我们有一项需求是希望能通过 user的 id 或者 username 直接转换为对应的 user 对象，那么我们就可以针对于 id 和 username 来建立一个 GenericConverter 。这里假设 id 是 int 型，而 username 是 String 型的，所以我们的GenericConverter 可以这样来写
 >
@@ -862,11 +866,11 @@ public class HelloController {
 > 1. 我们可以看到在上面定义的 UserGenericConverter 中，我们在 getConvertibleTypes 方法中添加了两组转换的组合， Integer 到 User 和 String 到 User 。然后我们给 UserGenericConverter注入了一个 UserService ，在 convert 方法中我们简单的根据原类型是 Integer 还是 String 来判断传递的原数据是 id 还是 username ，并利用UserService 对应的方法返回相应的 User 对象
 > 2. GenericConverter注册方法同Converter 接口
 
-## 总结
+### 总结
 
 > 虽然 Converter 接口、 ConverterFactory 接口和 GenericConverter 接口之间没有任何的关系，但是 Spring 内部在注册 Converter 实现类和 ConverterFactory 实现类时是先把它们转换为GenericConverter ，之后再统一对 GenericConverter 进行注册的。也就是说 Spring 内部会把Converter 和 ConverterFactory 全部转换为 GenericConverter 进行注册，在 Spring 注册的容器中只存在 GenericConverter 这一种类型转换器。我想之所以给用户开放 Converter 接口和ConverterFactory 接口是为了让我们能够更方便的实现自己的类型转换器。基于此， Spring 官方也提倡我们在进行一些简单类型转换器定义时更多的使用 Converter 接口和 ConverterFactory 接口，在非必要的情况下少使用 GenericConverter 接口。
 
-## ConditionalGenericConverter 
+### ConditionalGenericConverter 
 
 > 对于 GenericConverter 接口 Spring 还为我们提供了一个它的子接口，叫做ConditionalGenericConverter ，在这个接口中只定义了一个方法： matches 方法。我们一起来看一下 ConditionalGenericConverter 接口的定义
 >
@@ -918,7 +922,7 @@ public class HelloController {
 >
 > 我们可以看到这个 `StringToArrayConverter `就是实现了` ConditionalGenericConverter `接口的。根据里面的 `matches `方法的逻辑我们知道当我们要把一个字符串转换为一个数组的时候，只有我们已经定义了一个字符串到这个目标数组元素对应类型的类型转换器时才可以使用`StringToArrayConverter `进行类型转换。也就是说假如我们已经定义了一个 `String `到` User` 的类型转换器，那么当我们需要将 `String `转换为对应的 `User` 数组的时候，我们就可以直接使用 `Spring `为我们提供的 `StringToArrayConverter` 了。
 
-# mvc:annotation-driven
+## mvc:annotation-driven
 
 > 1. `<mvc:annotation-driven />` 会自动注册`RequestMappingHandlerMapping`、`RequestMappingHandlerAdapter `与`ExceptionHandlerExceptionResolver` 三个bean。
 >
@@ -932,7 +936,7 @@ public class HelloController {
 >
 >    ![1560474511440](images/1560474511440.png)
 
-# @InitBinder
+## @InitBinder
 
 > 1. 由 `@InitBinder` 标识的方法，可以对 `WebDataBinder` 对象进行初始化。`WebDataBinder `是 `DataBinder `的子类，用于完成由表单字段到 JavaBean 属性的绑定
 >
@@ -951,13 +955,13 @@ public class HelloController {
 > ```
 >
 > 5. 用法举例：比如表单中有多选按钮，对应的是JaveBean中的一个集合属性，然而选择的是id，而集合保存的确实类，这里我们就不能任SpringMVC自动绑定，需要我们手动绑定，所以就关闭其的自动绑定，不然会报错！
-## 注册编辑器
+### 注册编辑器
 
 > `WebDataBinder`是用来绑定请求参数到指定的属性编辑器.由于前台传到`controller`里的值是`String`类型的，当往`Model`里Set这个值的时候，如果set的这个属性是个对象，Spring就会去找到对应的`editor`进行转换，然后再set进去！Spring自己提供了大量的实现类（如下图所示的在`org.springframwork.beans.propertyEditors`下的所有`editor`），诸如`CustomDateEditor `，`CustomBooleanEditor`，`CustomNumberEditor`等许多，基本上够用。  在平时使用`SpringMVC`时，会碰到`javabean`中有Date类型参数，表单中传来代表日期的字符串转化为日期类型，SpringMVC默认不支持这种类型的转换。我们就需要手动设置时间格式并在`webDateBinder`上注册这个编辑器！
 >
 > ![1560474540040](images/1560474540040.png)
 >
-### 注册一个Date类型的编辑器
+#### 注册一个Date类型的编辑器
 
 >
 > ```java
@@ -970,7 +974,7 @@ public class HelloController {
 >     }
 > ```
 >
-### 注册自定义编辑器
+#### 注册自定义编辑器
 
 >
 >使用自定义编辑器就是在第二个的基础上添加个自定义编辑器就行了，自定义的编辑器类需要继承`org.springframework.beans.propertyeditors.PropertiesEditor`
@@ -999,7 +1003,7 @@ public class HelloController {
 >   }
 >```
 >
-### 设置属性的前缀实现参数绑定
+#### 设置属性的前缀实现参数绑定
 
 > jsp代码
 >
@@ -1043,7 +1047,7 @@ public class HelloController {
 >
 > `@InitBinder("user")`括号内的参数为类的首字母小写(默认命名规则),也可以用`@ModelAttribute("stu")`做限定.
 
-# 数据格式化
+## 数据格式化
 
 > 1. 对属性对象的输入/输出进行格式化，从其本质上讲依然属于 “类型转换” 的范畴。
 >
@@ -1058,7 +1062,7 @@ public class HelloController {
 >
 > 5. 装配了` FormattingConversionServiceFactroyBean` 后，就可以在 Spring MVC 入参绑定及模型数据输出时使用注解驱动了。`<mvc:annotation-driven/> `默认创建的`ConversionService `实例即为`FormattingConversionServiceFactroyBean`
 
-## 日期格式化
+### 日期格式化
 
 > @DateTimeFormat 注解可对java.util.Date、java.util.Calendar、java.long.Long 时间类型进行标注：
 >
@@ -1067,14 +1071,14 @@ public class HelloController {
 > >    ISO.DATE_TIME(yyyy-MM-dd hh:mm:ss.SSSZ)
 > > 3. style 属性：字符串类型。通过样式指定日期时间的格式，由两位字符组成，第一位表示日期的格式，第二位表示时间的格式：S：短日期/时间格式、M：中日期/时间格式、L：长日期/时间格式、F：完整日期/时间格式、-：忽略日期或时间格式
 
-## 数值格式化
+### 数值格式化
 
 > @NumberFormat • 可对类似数字类型的属性进行标注，它拥有两个互斥的属性：
 >
 > > 1. style：类型为 NumberFormat.Style。用于指定– 样式类型，包括三种：Style.NUMBER（正常数字类型）、Style.CURRENCY（货币类型）、 Style.PERCENT（百分数类型）
 > > 2. pattern：类型为 String，自定义样式，如patter="#,###"；
 
-## 示例
+### 示例
 
 ```java
 @NumberFormat(pattern="#,###,###.#")
@@ -1083,7 +1087,7 @@ private Float price;
 private Date productionDate;
 ```
 
-## 注意
+### 注意
 
 > 1. 若想要使用springmvc提供的格式化功能，又想使用自定义的类型转换器，需要使用`FormattingConversionServiceFactoryBean`替换`ConversionServiceFactoryBean`
 >
@@ -1116,7 +1120,7 @@ private Date productionDate;
 >       }
 >    ```
 
-# JSR303数据校验
+## JSR303数据校验
 
 > 1. 使用JSR303验证标准
 > 2. 加入hibernate validate验证框架相关的jar包
@@ -1124,7 +1128,7 @@ private Date productionDate;
 > 4. 在需要进行数据校验的bean的属性上使用对应的注解
 > 5. 在controller层的方法对应的需要校验的bean前面添加@valid注解
 
-## JSR303
+### JSR303
 
 > 1. JSR 303 是 Java 为 Bean 数据合法性校验提供的标准框架，它已经包含在 JavaEE 6.0 中 .
 >
@@ -1170,7 +1174,7 @@ private Date productionDate;
 >    @URL(protocol=,host=, port=,regexp=, flags=)
 >    ```
 
-## Hibernate Validator 扩展注解
+### Hibernate Validator 扩展注解
 
 > `Hibernate Validator` 是 JSR 303 的一个参考实现，除支持所有标准的校验注解外，它还支持以下的扩展注解
 >
@@ -1181,7 +1185,7 @@ private Date productionDate;
 > @Range(min=, max=) 检查数字是否介于min和max之间.
 > ```
 
-## Spring MVC 数据校验
+### Spring MVC 数据校验
 
 > 1. Spring 4.0 拥有自己独立的数据校验框架，同时支持 JSR303 标准的校验框架。
 > 2. Spring 在进行数据绑定时，可同时调用校验框架完成数据校验工作。在 Spring MVC 中，可直接通过注解驱动的方式进行数据校验
@@ -1195,7 +1199,7 @@ private Date productionDate;
 > 9. `Errors `接口提供了获取错误信息的方法，如 `getErrorCount() `或`getFieldErrors(String field) `
 > 10. `BindingResult `扩展了 `Errors `接口
 
-## 在目标方法中获取校验结果
+### 在目标方法中获取校验结果
 
 > 1. 在表单/命令对象类的属性中标注校验注解，在处理方法对应的入参前添加 @Valid，Spring MVC 就会实施校验并将校验结果保存在被校验入参对象之后的 BindingResult 或Errors 入参中。
 >
@@ -1206,14 +1210,14 @@ private Date productionDate;
 >    Object getFieldValue(String field) ：获取属性值
 >    Int getErrorCount()：获取错误属性个数
 
-## 在页面上显示错误
+### 在页面上显示错误
 
 > 1. Spring MVC 除了会将表单/命令对象的校验结果保存到对应的 BindingResult 或 Errors 对象中外，还会将所有校验结果保存到 “隐含模型”
 > 2. 即使处理方法的签名中没有对应于表单/命令对象的结果入参，校验结果也会保存在 “隐含对象” 中。
 > 3. 隐含模型中的所有数据最终将通过 HttpServletRequest 的属性列表暴露给 JSP 视图对象，因此在 JSP 中可以获取错误信息
 > 4. 在 JSP 页面上可通过 <form:errors path=“userName”>显示错误消息，使用*可以显示所有错误信息
 
-## 提示消息的国际化
+### 提示消息的国际化
 
 > 1. 每个属性在数据绑定和数据校验发生错误时，都会生成一个对应的 FieldError 对象。
 >
@@ -1240,7 +1244,7 @@ private Date productionDate;
 >         </bean>
 >    ```
 
-# 处理JSON
+## 处理JSON
 
 > 1. 添加jar包
 >
@@ -1249,3 +1253,58 @@ private Date productionDate;
 > 2. 编写目标方法，使其返回 JSON 对应的对象或集合
 >
 > 3. 在方法上添加 @ResponseBody 注解
+
+## springmvc全局异常处理
+
+### 使用@ControllerAdvice
+
+[SpringMVC实现全局异常处理器](https://blog.csdn.net/hbtj_1216/article/details/81102063)
+
+## properties文件映射map
+
+> 使用PropertiesFactoryBean读取配置文件，location属性指定路径
+
+## springmvc处理图片、视频等静态资源
+
+```java
+@Component
+public class NonStaticResourceHttpRequestHandler extends ResourceHttpRequestHandler {
+
+    public final static String ATTR_FILE = "NON-STATIC-FILE";
+
+    @Override
+    protected Resource getResource(HttpServletRequest request) {
+        final Path filePath = (Path) request.getAttribute(ATTR_FILE);
+        return new FileSystemResource(filePath.toFile());
+    }
+
+}
+
+@RestController
+public class FileRestController {
+
+    private final NonStaticResourceHttpRequestHandler nonStaticResourceHttpRequestHandler;
+
+    /**
+     * 预览视频文件, 支持 byte-range 请求
+     */
+    @RequestMapping("/video")
+    public void videoPreview(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String path = request.getParameter("path");
+        Path filePath = Paths.get(path);
+        if (Files.exists(filePath)) {
+            String mimeType = Files.probeContentType(filePath);
+            if (!StringUtils.isEmpty(mimeType)) {
+                response.setContentType(mimeType);
+            }
+            request.setAttribute(NonStaticResourceHttpRequestHandler.ATTR_FILE, filePath);
+            nonStaticResourceHttpRequestHandler.handleRequest(request, response);
+        } else {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.toString());
+        }
+    }
+
+}
+```
+
