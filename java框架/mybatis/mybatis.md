@@ -1474,8 +1474,6 @@ public class App {
 	</bean>
 ```
 
-
-
 #### 配置MapperScannerConfigurer
 
 > - **basePackage** :用于配置基本的包路径。可以使用分号或逗号作为分隔符设置多于一个的包路径，每个映射器将会在指定的包路径中递归地被搜索到。
@@ -3557,3 +3555,558 @@ public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBo
 > - **ParameterHandler**:对预编译的SQL语句进行参数设置，SQL语句中的的占位符“？”都对应
 > - BoundSql.parameterMappings集合中的一个元素，在该对象中记录了对应的参数名称以及该参数的相关属性
 > - **ResultSetHandler**:对数据库返回的结集(ResultSet)进行封装，返回用户指定的实体类型；
+
+##### StatementHandler
+
+![1597578856643](images/1597578856643.png)
+
+###### BaseStatementHandler
+
+> 定义如何创建一个Statement，而核心方法instantiateStatement(connection)交由子类实现
+
+```java
+@Override
+public Statement prepare(Connection connection, Integer transactionTimeout) throws SQLException {
+  ErrorContext.instance().sql(boundSql.getSql());
+  Statement statement = null;
+  try {
+    statement = instantiateStatement(connection);
+    setStatementTimeout(statement, transactionTimeout);
+    setFetchSize(statement);
+    return statement;
+  } catch (SQLException e) {
+    closeStatement(statement);
+    throw e;
+  } catch (Exception e) {
+    closeStatement(statement);
+    throw new ExecutorException("Error preparing statement.  Cause: " + e, e);
+  }
+}
+```
+
+###### RoutingStatementHandler
+
+> 使用静态代理封装StatementHandler，mybatis实际创建的就是这个类作为StatementHandler
+
+```java
+public class RoutingStatementHandler implements StatementHandler {
+
+  private final StatementHandler delegate;
+
+  public RoutingStatementHandler(Executor executor, MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+
+    switch (ms.getStatementType()) {
+      case STATEMENT:
+        delegate = new SimpleStatementHandler(executor, ms, parameter, rowBounds, resultHandler, boundSql);
+        break;
+      case PREPARED:
+        delegate = new PreparedStatementHandler(executor, ms, parameter, rowBounds, resultHandler, boundSql);
+        break;
+      case CALLABLE:
+        delegate = new CallableStatementHandler(executor, ms, parameter, rowBounds, resultHandler, boundSql);
+        break;
+      default:
+        throw new ExecutorException("Unknown statement type: " + ms.getStatementType());
+    }
+
+  }
+    
+//configuration对象创建StatementHandler，创建的是RoutingStatementHandler
+  public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+    StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
+    statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);
+    return statementHandler;
+  }
+```
+
+###### ParameterHandler
+
+> 根据占位符使用类型转换器设置参数值
+
+```java
+@Override
+public void setParameters(PreparedStatement ps) {
+  ErrorContext.instance().activity("setting parameters").object(mappedStatement.getParameterMap().getId());
+    //所有占位符映射信息
+  List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+  if (parameterMappings != null) {
+    for (int i = 0; i < parameterMappings.size(); i++) {
+        //当前占位符映射信息
+      ParameterMapping parameterMapping = parameterMappings.get(i);
+      if (parameterMapping.getMode() != ParameterMode.OUT) {
+        Object value;
+        String propertyName = parameterMapping.getProperty();
+        if (boundSql.hasAdditionalParameter(propertyName)) { // issue #448 ask first for additional params
+          value = boundSql.getAdditionalParameter(propertyName);
+        } else if (parameterObject == null) {
+          value = null;
+        } else if (typeHandlerRegistry.hasTypeHandler(parameterObject.getClass())) {
+          value = parameterObject;
+        } else {
+          MetaObject metaObject = configuration.newMetaObject(parameterObject);
+          value = metaObject.getValue(propertyName);
+        }
+        TypeHandler typeHandler = parameterMapping.getTypeHandler();
+        JdbcType jdbcType = parameterMapping.getJdbcType();
+        if (value == null && jdbcType == null) {
+          jdbcType = configuration.getJdbcTypeForNull();
+        }
+        try {
+            //使用类型转换器进行设值
+          typeHandler.setParameter(ps, i + 1, value, jdbcType);
+        } catch (TypeException | SQLException e) {
+          throw new TypeException("Could not set parameters for mapping: " + parameterMapping + ". Cause: " + e, e);
+        }
+      }
+    }
+  }
+}
+```
+
+###### ResultSetHandler
+
+> 对结果进行处理
+
+```java
+public List<Object> handleResultSets(Statement stmt) throws SQLException {
+  ErrorContext.instance().activity("handling results").object(mappedStatement.getId());
+
+    //存储转换结果
+  final List<Object> multipleResults = new ArrayList<>();
+
+  int resultSetCount = 0;
+    //包装查询结果
+  ResultSetWrapper rsw = getFirstResultSet(stmt);
+
+    //获取映射规则，存储过程可能有多个ResultMap
+  List<ResultMap> resultMaps = mappedStatement.getResultMaps();
+  int resultMapCount = resultMaps.size();
+  validateResultMapsCount(rsw, resultMapCount);
+  while (rsw != null && resultMapCount > resultSetCount) {
+    ResultMap resultMap = resultMaps.get(resultSetCount);
+      //处理一个映射
+    handleResultSet(rsw, resultMap, multipleResults, null);
+    rsw = getNextResultSet(stmt);
+    cleanUpAfterHandlingResultSet();
+    resultSetCount++;
+  }
+
+  String[] resultSets = mappedStatement.getResultSets();
+  if (resultSets != null) {
+    while (rsw != null && resultSetCount < resultSets.length) {
+      ResultMapping parentMapping = nextResultMaps.get(resultSets[resultSetCount]);
+      if (parentMapping != null) {
+        String nestedResultMapId = parentMapping.getNestedResultMapId();
+        ResultMap resultMap = configuration.getResultMap(nestedResultMapId);
+        handleResultSet(rsw, resultMap, null, parentMapping);
+      }
+      rsw = getNextResultSet(stmt);
+      cleanUpAfterHandlingResultSet();
+      resultSetCount++;
+    }
+  }
+
+  return collapseSingleResultList(multipleResults);
+}
+
+  private void handleResultSet(ResultSetWrapper rsw, ResultMap resultMap, List<Object> multipleResults, ResultMapping parentMapping) throws SQLException {
+    try {
+        //处理嵌套查询
+      if (parentMapping != null) {
+        handleRowValues(rsw, resultMap, null, RowBounds.DEFAULT, parentMapping);
+      } else {
+        if (resultHandler == null) {
+          DefaultResultHandler defaultResultHandler = new DefaultResultHandler(objectFactory);
+          handleRowValues(rsw, resultMap, defaultResultHandler, rowBounds, null);
+          multipleResults.add(defaultResultHandler.getResultList());
+        } else {
+          handleRowValues(rsw, resultMap, resultHandler, rowBounds, null);
+        }
+      }
+    } finally {
+      // issue #228 (close resultsets)
+      closeResultSet(rsw.getResultSet());
+    }
+  }
+
+  public void handleRowValues(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler<?> resultHandler, RowBounds rowBounds, ResultMapping parentMapping) throws SQLException {
+      //处理嵌套查询
+    if (resultMap.hasNestedResultMaps()) {
+      ensureNoRowBounds();
+      checkResultHandler();
+      handleRowValuesForNestedResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
+    } else {
+      handleRowValuesForSimpleResultMap(rsw, resultMap, resultHandler, rowBounds, parentMapping);
+    }
+  }
+
+  private void handleRowValuesForSimpleResultMap(ResultSetWrapper rsw, ResultMap resultMap, ResultHandler<?> resultHandler, RowBounds rowBounds, ResultMapping parentMapping)
+      throws SQLException {
+      //临时存储一条数据的映射结果
+    DefaultResultContext<Object> resultContext = new DefaultResultContext<>();
+    ResultSet resultSet = rsw.getResultSet();
+      //mybatis的分页，是物理分页，即先查询出所有数据，然后在内存进行分页，所以不建议使用
+    skipRows(resultSet, rowBounds);
+    while (shouldProcessMoreRows(resultContext, rowBounds) && !resultSet.isClosed() && resultSet.next()) {
+        //处理鉴别器
+      ResultMap discriminatedResultMap = resolveDiscriminatedResultMap(resultSet, resultMap, null);
+        //映射一条数据
+      Object rowValue = getRowValue(rsw, discriminatedResultMap, null);
+        //数据暂存到resultContext
+      storeObject(resultHandler, resultContext, rowValue, parentMapping, resultSet);
+    }
+  }
+
+  private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap, String columnPrefix) throws SQLException {
+    final ResultLoaderMap lazyLoader = new ResultLoaderMap();
+      //获取返回对象类型
+    Object rowValue = createResultObject(rsw, resultMap, lazyLoader, columnPrefix);
+    if (rowValue != null && !hasTypeHandlerForResultObject(rsw, resultMap.getType())) {
+        //获取返回值元数据对象
+      final MetaObject metaObject = configuration.newMetaObject(rowValue);
+      boolean foundValues = this.useConstructorMappings;
+        //使用自动映射，需要在resultMap配置
+      if (shouldApplyAutomaticMappings(resultMap, false)) {
+        foundValues = applyAutomaticMappings(rsw, resultMap, metaObject, columnPrefix) || foundValues;
+      }
+        //根据resultMap配置的映射规则进行映射，使用metaObject对属性进行设值
+      foundValues = applyPropertyMappings(rsw, resultMap, metaObject, lazyLoader, columnPrefix) || foundValues;
+      foundValues = lazyLoader.size() > 0 || foundValues;
+      rowValue = foundValues || configuration.isReturnInstanceForEmptyRow() ? rowValue : null;
+    }
+    return rowValue;
+  }
+```
+
+## spring整合mybatis源码
+
+### SqlSessionFactoryBean
+
+> 功能：注入SqlSessionFactory到spring容器
+>
+> ```java
+> public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean, ApplicationListener<ApplicationEvent> 
+> 
+> //将sqlSessionFactory注入到spring
+>   public SqlSessionFactory getObject() throws Exception {
+>     if (this.sqlSessionFactory == null) {
+>       afterPropertiesSet();
+>     }
+> 
+>     return this.sqlSessionFactory;
+>   }
+>   
+> //初始化sqlSessionFactory
+>   public void afterPropertiesSet() throws Exception {
+>     notNull(dataSource, "Property 'dataSource' is required");
+>     notNull(sqlSessionFactoryBuilder, "Property 'sqlSessionFactoryBuilder' is required");
+>     state((configuration == null && configLocation == null) || !(configuration != null && configLocation != null),
+>               "Property 'configuration' and 'configLocation' can not specified with together");
+> 
+>       //解析xml初始化sqlSessionFactory
+>     this.sqlSessionFactory = buildSqlSessionFactory();
+>   }
+> ```
+
+### MapperFactoryBean
+
+> 对于每一个mapper接口，实际上是实例化一个MapperFactoryBean注入spring
+>
+> ```java
+> public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements FactoryBean<T>
+> 
+> //通过SqlSession创建Mapper接口的代理对象
+>   public T getObject() throws Exception {
+>     return getSqlSession().getMapper(this.mapperInterface);
+>   }
+> ```
+
+### MapperScannerConfigurer
+
+> 功能是将配置的接口全部转换为MapperFactoryBean并注册到spring
+>
+> 它实现了BeanDefinitionRegistryPostProcessor接口，可以在实例化bean之前修改bean的元数据信息
+>
+> ```java
+> public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProcessor, InitializingBean, ApplicationContextAware, BeanNameAware
+> 
+>   public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+>     if (this.processPropertyPlaceHolders) {
+>       processPropertyPlaceHolders();
+>     }
+> 
+> //构建一个扫描器，可以指定扫描规则
+>     ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
+>     scanner.setAddToConfig(this.addToConfig);
+>     scanner.setAnnotationClass(this.annotationClass);
+>     scanner.setMarkerInterface(this.markerInterface);
+>     scanner.setSqlSessionFactory(this.sqlSessionFactory);
+>     scanner.setSqlSessionTemplate(this.sqlSessionTemplate);
+>     scanner.setSqlSessionFactoryBeanName(this.sqlSessionFactoryBeanName);
+>     scanner.setSqlSessionTemplateBeanName(this.sqlSessionTemplateBeanName);
+>     scanner.setResourceLoader(this.applicationContext);
+>     scanner.setBeanNameGenerator(this.nameGenerator);
+>     scanner.registerFilters();
+>     scanner.scan(StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
+>   }
+>   
+> //ClassPathMapperScanner重写了父类的doScan方法
+>   public Set<BeanDefinitionHolder> doScan(String... basePackages) {
+>     Set<BeanDefinitionHolder> beanDefinitions = super.doScan(basePackages);
+> 
+>     if (beanDefinitions.isEmpty()) {
+>       logger.warn("No MyBatis mapper was found in '" + Arrays.toString(basePackages) + "' package. Please check your configuration.");
+>     } else {
+>       processBeanDefinitions(beanDefinitions);
+>     }
+> 
+>     return beanDefinitions;
+>   }
+> 
+> 
+> private void processBeanDefinitions(Set<BeanDefinitionHolder> beanDefinitions) {
+>     GenericBeanDefinition definition;
+>     for (BeanDefinitionHolder holder : beanDefinitions) {
+>       definition = (GenericBeanDefinition) holder.getBeanDefinition();
+> 
+>       if (logger.isDebugEnabled()) {
+>         logger.debug("Creating MapperFactoryBean with name '" + holder.getBeanName() 
+>           + "' and '" + definition.getBeanClassName() + "' mapperInterface");
+>       }
+> 
+> 	//设置构造器参数，MapperFactoryBean的构造器方法有一个参数
+>   definition.getConstructorArgumentValues().addGenericArgumentValue(definition.getBeanClassName());
+>         //修改类型为MapperFactoryBean
+>       definition.setBeanClass(this.mapperFactoryBean.getClass());
+> 
+>       definition.getPropertyValues().add("addToConfig", this.addToConfig);
+> 
+>       boolean explicitFactoryUsed = false;
+>       if (StringUtils.hasText(this.sqlSessionFactoryBeanName)) {
+>         definition.getPropertyValues().add("sqlSessionFactory", new RuntimeBeanReference(this.sqlSessionFactoryBeanName));
+>         explicitFactoryUsed = true;
+>       } else if (this.sqlSessionFactory != null) {
+>         definition.getPropertyValues().add("sqlSessionFactory", this.sqlSessionFactory);
+>         explicitFactoryUsed = true;
+>       }
+> 
+>       if (StringUtils.hasText(this.sqlSessionTemplateBeanName)) {
+>         if (explicitFactoryUsed) {
+>           logger.warn("Cannot use both: sqlSessionTemplate and sqlSessionFactory together. sqlSessionFactory is ignored.");
+>         }
+>         definition.getPropertyValues().add("sqlSessionTemplate", new RuntimeBeanReference(this.sqlSessionTemplateBeanName));
+>         explicitFactoryUsed = true;
+>       } else if (this.sqlSessionTemplate != null) {
+>         if (explicitFactoryUsed) {
+>           logger.warn("Cannot use both: sqlSessionTemplate and sqlSessionFactory together. sqlSessionFactory is ignored.");
+>         }
+>         definition.getPropertyValues().add("sqlSessionTemplate", this.sqlSessionTemplate);
+>         explicitFactoryUsed = true;
+>       }
+> 
+>         //修改注入类型为byType
+>       if (!explicitFactoryUsed) {
+>         if (logger.isDebugEnabled()) {
+>           logger.debug("Enabling autowire by type for MapperFactoryBean with name '" + holder.getBeanName() + "'.");
+>         }
+>         definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
+>       }
+>     }
+>   }
+> ```
+
+### 整合后如何保证SqlSession线程安全
+
+> 我们知道mybatis的SqlSession不是线程安全的，但是我们在spring中注入的Mapper接口(实际类型时MapperProxy)确是单例的，那么它调用方法到SqlSession执行是如何保证线程安全的呢?
+>
+> 答案是**ThreadLocal**
+
+#### MapperFactoryBean
+
+> 这里的getSqlSession()实际返回的是SqlSessionTemplate，它在MapperFactoryBean的父类SqlSessionDaoSupport进行初始化
+
+```java
+public T getObject() throws Exception {
+  return getSqlSession().getMapper(this.mapperInterface);
+}
+
+//SqlSessionDaoSupport初始化sqlSession
+  public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+    if (!this.externalSqlSession) {
+      this.sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+    }
+  }
+```
+
+#### SqlSessionTemplate
+
+```java
+public SqlSessionTemplate(SqlSessionFactory sqlSessionFactory, ExecutorType executorType,
+    PersistenceExceptionTranslator exceptionTranslator) {
+
+  notNull(sqlSessionFactory, "Property 'sqlSessionFactory' is required");
+  notNull(executorType, "Property 'executorType' is required");
+
+  this.sqlSessionFactory = sqlSessionFactory;
+  this.executorType = executorType;
+  this.exceptionTranslator = exceptionTranslator;
+    //基于动态代理增强SqlSession
+  this.sqlSessionProxy = (SqlSession) newProxyInstance(
+      SqlSessionFactory.class.getClassLoader(),
+      new Class[] { SqlSession.class },
+      new SqlSessionInterceptor());
+}
+```
+
+#### SqlSessionInterceptor
+
+```java
+  private class SqlSessionInterceptor implements InvocationHandler {
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        //关键代码，获取线程安全的SqlSession
+      SqlSession sqlSession = getSqlSession(
+          SqlSessionTemplate.this.sqlSessionFactory,
+          SqlSessionTemplate.this.executorType,
+          SqlSessionTemplate.this.exceptionTranslator);
+      try {
+        Object result = method.invoke(sqlSession, args);
+        if (!isSqlSessionTransactional(sqlSession, SqlSessionTemplate.this.sqlSessionFactory)) {
+          // force commit even on non-dirty sessions because some databases require
+          // a commit/rollback before calling close()
+          sqlSession.commit(true);
+        }
+        return result;
+      } catch (Throwable t) {
+        Throwable unwrapped = unwrapThrowable(t);
+        if (SqlSessionTemplate.this.exceptionTranslator != null && unwrapped instanceof PersistenceException) {
+          // release the connection to avoid a deadlock if the translator is no loaded. See issue #22
+          closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
+          sqlSession = null;
+          Throwable translated = SqlSessionTemplate.this.exceptionTranslator.translateExceptionIfPossible((PersistenceException) unwrapped);
+          if (translated != null) {
+            unwrapped = translated;
+          }
+        }
+        throw unwrapped;
+      } finally {
+        if (sqlSession != null) {
+          closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
+        }
+      }
+    }
+  }
+
+}
+
+
+  public static SqlSession getSqlSession(SqlSessionFactory sessionFactory, ExecutorType executorType, PersistenceExceptionTranslator exceptionTranslator) {
+
+    notNull(sessionFactory, NO_SQL_SESSION_FACTORY_SPECIFIED);
+    notNull(executorType, NO_EXECUTOR_TYPE_SPECIFIED);
+
+      //SqlSession的线程安全依赖于事务管理器TransactionSynchronizationManager，如果当前线程中的SqlSession（实际上是被包装为SqlSessionHolder）未与SqlSessionFactory绑定，那么就使用Map<SqlSessionFactory,SqlSessionHolder>进行绑定关系，然后通过bindResource方法，存到本地线程变量中
+    SqlSessionHolder holder = (SqlSessionHolder) TransactionSynchronizationManager.getResource(sessionFactory);
+
+    SqlSession session = sessionHolder(executorType, holder);
+    if (session != null) {
+      return session;
+    }
+
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Creating a new SqlSession");
+    }
+
+    session = sessionFactory.openSession(executorType);
+
+    registerSessionHolder(sessionFactory, executorType, exceptionTranslator, session);
+
+    return session;
+  }
+```
+
+## mybatis插件
+
+### 概述
+
+> - 插件是用来改变或者扩展mybatis的原有的功能，mybaits的插件就是通过继承Interceptor拦截器实现的；在没有完全理解插件之前禁止使用插件对mybaits进行扩展，又可能会导致严重的问题；mybatis中能使用插件进行拦截的接口和方法如下:
+> - Executor ( update、 query、 flushStatment、 commit 、 rollback 、getTransaction 、 close、 isClose )
+> - StatementHandler (prepare、 paramterize 、 batch 、 update、 query)
+> - ParameterHandler ( getParameterObject、 setParameters)
+> - ResultSetHandler ( handleResultSets、 handleCursorResultSets, handleOutputParameters)
+
+### 插件开发demo
+
+#### 需求
+
+> 定义一个阈值，当查询操作运行时间超过这个阈值记录日志供运维人员定位慢查询，插件实现步骤:
+>
+> 1.实现Interceptor接口方法
+>
+> 2.确定拦截的签名
+>
+> 3.在配置文件中配置插件
+>
+> 运行测试用例
+
+#### 核心接口
+
+```java
+public interface Interceptor {
+	//拦截方法
+  Object intercept(Invocation invocation) throws Throwable;
+	//动态代理增强
+  default Object plugin(Object target) {
+    return Plugin.wrap(target, this);
+  }
+	//读取属性
+  default void setProperties(Properties properties) {
+    // NOP
+  }
+
+}
+```
+
+#### 代码
+
+```java
+//插件配置
+    <plugins>
+        <plugin interceptor="com.sugar.plugin.MyPlugin">
+            <property name="threshold" value="1"/>
+        </plugin>
+    </plugins>
+
+
+@Intercepts(@Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}))
+public class MyPlugin implements Interceptor {
+
+    private Long threshold;
+
+    @Override
+    public Object intercept(Invocation invocation) throws Throwable {
+        long begin = System.currentTimeMillis();
+        Object result = invocation.proceed();
+        long end = System.currentTimeMillis();
+        long runTime = end - begin;
+        if (runTime >= threshold) {
+            Object[] args = invocation.getArgs();
+            Statement statement = (Statement) args[0];
+            MetaObject metaObject = SystemMetaObject.forObject(statement);
+            PreparedStatementLogger preparedStatementLogger = (PreparedStatementLogger) metaObject.getValue("h");
+            Statement preparedStatement = preparedStatementLogger.getPreparedStatement();
+            System.out.println("sql语句:" + preparedStatement.toString() + "执行时间:" + runTime + "ms，已超过阈值");
+
+        }
+        return result;
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        threshold = Long.valueOf(properties.getProperty("threshold", "300"));
+    }
+}
+
+```
+
+### 插件原理
