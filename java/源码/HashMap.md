@@ -1,8 +1,24 @@
-源码基于jdk1.8
+## 明
+
+> 源码基于jdk1.8
+
+## 目录
 
 [jdk HashMap源码解读](<https://www.cnblogs.com/xiaoxi/p/7233201.html>)
 
-# HashMap重要属性
+## HashMap结构图
+
+![1598802175711](images/1598802175711.png)
+
+## put数据原理图
+
+![1598802325758](images/1598802325758.png)
+
+## resize流程图
+
+![1598885517633](images/1598885517633.png)
+
+## HashMap重要属性
 
 ```java
 //默认初始化容量，必须是2的次方，默认为16
@@ -19,9 +35,9 @@ static final int UNTREEIFY_THRESHOLD = 6;
 static final int MIN_TREEIFY_CAPACITY = 64;
 ```
 
-# 方法
+## 方法
 
-## put(K key, V value)
+### put(K key, V value)
 
 ```java
 public V put(K key, V value) {
@@ -90,7 +106,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 }
 ```
 
-## resize()
+### resize()
 
 ```java
 final Node<K,V>[] resize() {
