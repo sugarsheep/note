@@ -83,7 +83,7 @@
 
 ### 创建工程
 
-> - 下载源码压缩包，idea创建一个empty prohect,将源码包解压到该目录
+> - 下载源码压缩包，idea创建一个empty project,将源码包解压到该目录
 > - 进入解压后的目录，创建home目录，然后将conf目录和webapps目录移动到home目录下
 
 ### 新建pom.xml文件
@@ -269,7 +269,7 @@
 #### 架构介绍
 
 > - Coyote 是Tomcat的连接器框架的名称，是Tomcat服务器提供的供客户端访问的外部接口。客户端通过coyote与服务器建立连接、发送请求并接受响应
-> - Coyote 封装了底层的网络通信(socket 请求及响应处理)，为catalina 容器提供了统一的接口，使Catalina 容器与具体的请求协议及工o操作方式完全解耦。coyote 将socket 输入转换封装为 Request 对象，交由Catalina 容器进行处理，处理请求完成后，Catalina 通过coyote提供的Response 对象将结果写入输出流。
+> - Coyote 封装了底层的网络通信(socket 请求及响应处理)，为catalina 容器提供了统一的接口，使Catalina 容器与具体的请求协议及IO操作方式完全解耦。coyote 将socket 输入转换封装为 Request 对象，交由Catalina 容器进行处理，处理请求完成后，Catalina 通过coyote提供的Response 对象将结果写入输出流。
 > - coyote作为独立的模块，只负责具体协议和IO的相关操作，与servlet 规范实现没有直接关系，因此即便是 Request 和Response对象也并未实现servlet规范对应的接口，而是在catalina 中将他们进一步封装为ServletRequest 和ServletResponse。
 >
 > ![1584861256552](images/1584861256552.png)
@@ -278,9 +278,9 @@
 
 #### IO模型与协议
 
-> 在coyote中, Tomcat支持的多种/o模型和应用层协议，具体包含哪些o模型和应用层协议，请看下表:
+> 在coyote中, Tomcat支持的多种IO模型和应用层协议，具体包含哪些IO模型和应用层协议，请看下表:
 
-Tomcat 支持的工o模型(自8.5/9.0 版本起，Tomcat移除了对BIO 的支持):
+Tomcat 支持的IO模型(自8.5/9.0 版本起，Tomcat移除了对BIO 的支持):
 
 | IO模型 | 描述                                                         |
 | ------ | ------------------------------------------------------------ |

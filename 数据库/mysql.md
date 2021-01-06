@@ -207,3 +207,4 @@ MySQLSlap是从MySQL的5.1.4版开始就开始官方提供的压力测试工具
 | -number-int-cols-name                | 自动生成的测试表中包含N个数字类型的列，默认1                 |
 | --debug-info                         | 打印内存和CPU的信息                                          |
 
+## 事务
