@@ -993,3 +993,116 @@ public RestTemplate restTemplate(){
 private static final String PAYMENT_URL = "http://CLOUD-PAYMENT-SERVICE";
 ```
 
+### actuator微服务信息完善
+
+#### 修改服务在eureka上显示的实例名称
+
+##### yml
+
+```yml
+eureka:
+  instance:
+    instance-id: payment8001
+```
+
+##### 效果
+
+![1612013842476](images/1612013842476.png)
+
+#### 修改服务在eureka上显示的IP
+
+##### yml
+
+> 配置prefer-ip-address为true
+
+```yml
+eureka:
+  instance:
+    instance-id: payment8002
+    prefer-ip-address: true
+```
+
+##### 效果
+
+![1612014133885](images/1612014133885.png)
+
+### 服务发现Discovery
+
+>  在客户端获取eureka上的服务信息
+>
+> - 启动类标注@EnableDiscoveryClient
+
+```java
+@Autowired
+private DiscoveryClient discoveryClient;
+
+@GetMapping("/payment/discovery")
+public Map<String,Object> discovery(){
+    Map<String,Object> result = new HashMap<>();
+    List<String> services = discoveryClient.getServices();
+    result.put("service",services);
+
+    for (String service : services) {
+        List<ServiceInstance> instances = discoveryClient.getInstances(service);
+        result.put(service,instances);
+    }
+
+    return result;
+}
+```
+
+### Eureka自我保护
+
+#### 概述
+
+> - 保护模式主要用于一组客户端和Eureka Server之间存在网络分区场景下的保护。一但进入保护模式，Eureka Server将会尝试保护其服务注册表中的信息，不再删除服务注册表中的数据,也就是不会注销任何微服务。
+>
+> - 如果在Eureka Server的首页看到以下这段提示，则说明Eureka进入了保护模式:
+>
+>   ```
+>   EMERGENCY! EUREKA MAY BE INCORRECTLY CLAIMING INSTANCES ARE UP WHEN THEY'RE NOT. RENEWALS ARE LESSER THAN THRESHOLD AND HENCE THE INSTANCES ARE NOT BEING EXPIRED JUST TO BE SAFE.
+>   ```
+>
+> - **某时刻某一个微服务不可用了，Eureka不会立刻清理，依旧会对该微服务的信息进行保存**
+>
+> - 属于CAP理论中的AP
+
+#### 自我保护机制产生原因
+
+> 为了防止EurekaClient可以正常运行，但是与EurekaServer网络不通情况下，EurekaServer不会立 刻将EurekaClient服务剔除
+
+#### 什么是自我保护模式
+
+> - 默认情况下，如果EurekaServer在一 定时间内没有 接收到某个微服务实例的心跳，EurekaServer将 会注销该实例(默认90秒) 。但是当网络分区故障发生(延时、卡顿、 拥挤)时，微服务与EurekaServer之间无法正常通信，以上行为可能变得非常危险了一因为微服务本身其实是健康的，**此时本不应该注销这个微服务**。Eureka通过“ 自我保护模式”来解决这个问题当EurekaServer节点在短时间内丢失过多客户端时(可能发生了网络分区故障)，那么这 个节点就会进入自我保护模式。
+> - **在自我保护模式中，Eureka Server会保护服务注册表中的信息，不再注销任何服务实例。**
+> - 它的设计哲学就是宁可保留错误的服务注册信息，也不盲目注销任何可能健康的服务实例。-句话讲解:好死不如赖活着
+> - 综上，自我保护模式是一 种应对网络异常的安全保护措施。它的架构哲学是宁可同时保留所有微服务(健康的微服务和不健康的微服务都会保留)也不盲目注销任何健康的微服务。使用自我保护模式，可以让Eureka集群更加的健壮、稳定。   
+
+#### 如何进制自我保护
+
+##### server端配置yml
+
+```yml
+eureka:
+ server:
+  #关闭自我保护机制
+  enable-self-preservation: false
+  # 指定 Eviction Task 定时任务的调度频率，用于剔除过期的实例，此处未使用默认频率，频率为：5/秒，默认为：60/秒
+  # 有效防止的问题是：应用实例异常挂掉，没能在挂掉之前告知Eureka server要下线掉该服务实例信息。这个就需要依赖Eureka server的EvictionTask去剔除。
+  eviction-interval-timer-in-ms: 2000
+```
+
+##### client端配置yml
+
+```yml
+eureka:
+  instance:
+    #心跳检测与续约设置，开发时设置小些，保证服务关闭后注册中心能及时删除服务
+    #客户端发送心跳时间间隔，默认30s
+    lease-renewal-interval-in-seconds: 1
+    #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(獸认是90秒) ,超时将剔除服务
+    lease-expiration-duration-in-seconds: 2
+```
+
+## 使用zookeeper替代eureka
+
