@@ -30,7 +30,9 @@
 
 #### 解决windows和linux无法ping通的问题
 
-查看windows的vmware配置的信息和虚拟机的是否相同，要将windows的ip和linux的ip配置成同一网段
+> - 查看windows的vmware配置的信息和虚拟机的是否相同，要将windows的ip和linux的ip配置成同一网段
+> - **设置好一段时间之后，window和虚拟机可能就无法相互ping通了，此时需要重新设置虚拟机配置**
+>   - 编辑-->虚拟机网络编辑器-->VMnet8-->还原默认配置，还原后按照上述配置重新配置即可
 
 ##### windows配置
 
